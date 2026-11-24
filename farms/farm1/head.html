@@ -1,0 +1,91 @@
+<title>Farm 1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: full-bleed 3D field, one compact field-card top-left, view switcher bottom */
+:root {
+  --bg: #e9efe4; --panel: rgba(250, 252, 246, .92); --ink: #1d2a1f; --muted: #5d6b5f; --line: #d3dccb;
+  --accent: #2d6a3e; --fence: #58d47c; --chip: #eef3e8;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif; --f-body: "Barlow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1611; --panel: rgba(22, 31, 24, .9); --ink: #e8efe6; --muted: #9aab9c; --line: #2f3c31; --accent: #6fbf84; --chip: #1e2a20; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0f1611; --panel: rgba(22, 31, 24, .9); --ink: #e8efe6; --muted: #9aab9c; --line: #2f3c31; --accent: #6fbf84; --chip: #1e2a20; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.card { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px));
+  width: min(300px, calc(100% - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 10px; }
+.card h1 { font-family: var(--f-display); font-weight: 700; font-size: 24px; letter-spacing: .02em; margin: 0; line-height: 1; text-wrap: balance; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.stats div { display: flex; flex-direction: column; }
+.stats b { font-family: var(--f-display); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stats span { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.row output { font-family: var(--f-display); font-size: 17px; color: var(--ink); min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px var(--f-body); padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); color: var(--ink); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.chip:focus-visible, .views button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { font-size: 11.5px; color: var(--muted); line-height: 1.4; margin: 0; }
+.toggle { display: none; }
+.views { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.views button { font: 600 14px var(--f-body); border: 0; background: transparent; color: var(--ink); padding: 8px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.views button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.compass { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: 46px; height: 46px;
+  border-radius: 50%; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; }
+.compass svg { width: 34px; height: 34px; }
+#loading[hidden] { display: none; }
+.tag3d { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 20px var(--f-display); letter-spacing: .04em; color: #fff; background: rgba(29, 42, 31, .82); padding: 4px 12px; border-radius: 8px; white-space: nowrap; }
+.tag3d::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 0; border-top-color: rgba(29, 42, 31, .82); }
+#loading { position: fixed; inset: 0; display: grid; place-items: center; font: 600 16px var(--f-body); color: var(--muted); pointer-events: none; }
+@media (max-width: 560px) {
+  .card { padding: 10px 12px; gap: 8px; }
+  .card h1 { font-size: 20px; }
+  .card:not(.open) .more { display: none; }
+  .toggle { display: inline-flex; position: absolute; top: 8px; right: 8px; }
+  .views button { padding: 8px 11px; font-size: 13px; }
+}
+.back { font: 600 13px var(--f-body); color: var(--accent); text-decoration: none; margin-right: 10px; }
+</style>
+<div id="stage"></div>
+<div class="tag3d" id="tag3d" hidden>Farm 1</div>
+<div id="loading">Loading the farm…</div>
+<section class="card" id="card" aria-label="Farm details">
+  <a class="back" href="./#palms">‹ App</a><h1>Farm 1</h1>
+  <button class="chip toggle" id="more" aria-expanded="false">More</button>
+  <div class="stats">
+    <div><b id="sAcres">11.0</b><span>acres</span></div>
+    <div><b id="sPalms">605</b><span>palms seen</span></div>
+    <div><b id="sPer">300 m</b><span>long side</span></div>
+  </div>
+  <div class="more" style="display:flex;flex-direction:column;gap:10px">
+    <label class="row" for="sun">Sun <input type="range" id="sun" min="6" max="18" step="0.25" value="9.5"><output id="sunOut">9:30</output></label>
+    <div class="chips">
+      <button class="chip" id="tFence" aria-pressed="true">Boundary</button>
+      <button class="chip" id="tBunch" aria-pressed="true">Bunches</button>
+      <button class="chip" id="tNbr" aria-pressed="true">Neighbours</button>
+      <button class="chip" id="tSpin" aria-pressed="false">Spin</button>
+      <button class="chip" id="gpsLoad">Load GPS trees</button>
+      <button class="chip" id="gpsClear" hidden>Clear GPS</button>
+      <input type="file" id="gpsFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="note" id="gpsNote" hidden></p>
+    <p class="note">Built from your satellite photo and boundary line. Palm spots come from crowns seen in the photo; heights are estimated from canopy density. Buildings follow the Google Maps view. Scale is set so the area inside the outline is 11 acres (palms about 7.7 m apart).</p>
+  </div>
+</section>
+<div class="compass" aria-hidden="true"><svg viewBox="-20 -20 40 40" id="needle"><path d="M0-15 5 2 0-2-5 2Z" fill="#c0392b"/><path d="M0 15 5 2 0-2-5 2Z" fill="#8a948c"/><text x="0" y="-6" font-size="0" fill="none">N</text></svg></div>
+<nav class="views" aria-label="Camera">
+  <button data-v="over" aria-pressed="true">Overview</button>
+  <button data-v="top" aria-pressed="false">Top</button>
+  <button data-v="shed" aria-pressed="false">Sheds</button>
+  <button data-v="walk" aria-pressed="false">Walk in</button>
+</nav>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Sky.js"></script>

@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function member() { return signedIn() && exists(/databases/$(db)/documents/members/$(request.auth.uid)); }
+    function admin() { return member() && get(/databases/$(db)/documents/members/$(request.auth.uid)).data.role == 'admin'; }
+    function pinOk(kind) {
+      return getAfter(/databases/$(db)/documents/joins/$(request.auth.uid)).data.pin
+             == get(/databases/$(db)/documents/secret/join).data[kind];
+    }
+
+    // PINs live here; set them in the Firebase console. Nobody can read them from the app.
+    match /secret/{d} { allow read, write: if false; }
+
+    // Written in the same batch as members/{uid} so the rules can check the PIN.
+    match /joins/{uid} { allow create, update: if signedIn() && request.auth.uid == uid; allow read, delete: if false; }
+
+    match /members/{uid} {
+      allow read: if member() || (signedIn() && request.auth.uid == uid);
+      allow create, update: if signedIn() && request.auth.uid == uid && (
+        (request.resource.data.role == 'worker' && pinOk('workerPin')) ||
+        (request.resource.data.role == 'admin' && pinOk('adminPin')));
+      allow delete: if admin();
+    }
+
+    match /config/{d} { allow read: if member(); allow write: if admin(); }
+    match /palms/{id} { allow read, write: if member(); }
+    match /tickets/{id} { allow read, create, update: if member(); allow delete: if admin(); }
+  }
+}
