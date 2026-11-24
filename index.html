@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Palm Farm">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
-  <script type="module" crossorigin src="./assets/index-CHuYRleM.js"></script>
+  <script type="module" crossorigin src="./assets/index-Btbqrtic.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-WkwZ5CU-.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-DHaWAdyv.css">
+  <link rel="stylesheet" crossorigin href="./assets/index-CvBjXvZ5.css">
 </head>
 <body>
 
@@ -99,11 +99,45 @@
     <section data-view="palms" class="panel" hidden>
       <h2 data-t="fieldTools"></h2>
       <div class="tool-grid">
-        <button class="btn go" id="goSurvey" data-t="svOpen"></button>
+        <button class="btn go" id="goTag" data-t="tgOpen"></button>
+        <button class="btn" id="goSurvey" data-t="svOpen"></button>
         <a class="btn" id="go3d1" href="farm1.html" data-t="farm1_3d"></a>
         <a class="btn" id="go3d2" href="farm2.html" data-t="farm2_3d"></a>
       </div>
       <p class="hint" data-t="fieldToolsHint"></p>
+    </section>
+
+    <!-- Tag palms: mark each palm's GPS spot -->
+    <section data-view="tag" hidden>
+      <div class="sv-top">
+        <button class="btn small" id="tgBack" data-t="svBack"></button>
+        <label class="field sv-blk"><span data-t="block"></span><select id="tgBlock"></select></label>
+        <span class="sv-gps"><span class="sv-dot" id="tgDot"></span><span id="tgGps"></span></span>
+      </div>
+    </section>
+    <section data-view="tag" class="panel tg-cur" hidden>
+      <div class="tg-head">
+        <button class="nav" id="tgPrev" aria-label="Previous palm">‹</button>
+        <div class="tg-mid"><div class="palmid" id="tgId"></div><div class="hint" id="tgSub"></div><span class="sv-pill" id="tgState"></span></div>
+        <button class="nav" id="tgNext" aria-label="Next palm">›</button>
+      </div>
+      <div class="hint tg-away" id="tgAway"></div>
+      <button class="btn go tg-mark" id="tgMark" data-t="tgMark"></button>
+      <div class="tool-grid">
+        <button class="btn small" id="tgSkip" data-t="tgSkip"></button>
+        <button class="btn small sv-del" id="tgClear" data-t="tgClear"></button>
+      </div>
+      <div class="round"><div class="bar"><i id="tgBar"></i></div><span id="tgCount"></span></div>
+    </section>
+    <section data-view="tag" class="panel" hidden>
+      <h2 data-t="tgMapT"></h2>
+      <canvas id="tgMap" width="800" height="640" aria-label="Tagged palms map"></canvas>
+      <div class="hint" data-t="tgMapHint"></div>
+    </section>
+    <section data-view="tag" class="panel" hidden>
+      <h2 data-t="tgListT"></h2>
+      <div class="legend"><span><i style="background:var(--ok)"></i><span data-t="tgLegTag"></span></span><span><i style="background:var(--h0)"></i><span data-t="tgLegNo"></span></span><span><i style="background:var(--fruit)"></i><span data-t="tgLegCur"></span></span></div>
+      <div id="tgList" class="tg-list"></div>
     </section>
 
     <!-- Survey: GPS rows -->
