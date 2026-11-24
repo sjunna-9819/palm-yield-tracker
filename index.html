@@ -54,6 +54,7 @@ button { font: inherit; cursor: pointer; }
 .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 14px; font-weight: 700; }
 .pill.ok { background: #dff2e4; color: var(--green-dark); } .pill.warn { background: #ffefd2; color: #7a4a00; } .pill.bad { background: #fde2df; color: var(--red); }
 .trees { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; font-size: 14px; }
+.trees .tree.on { outline: 2px solid var(--green); background: #dff2e4; }
 .trees .tree { background: #eef3ec; border: 0; border-radius: 8px; padding: 10px 6px; text-align: center; font-weight: 600; color: var(--ink); }
 canvas { width: 100%; height: 320px; background: #e9efe6; border-radius: 12px; border: 2px solid var(--line); touch-action: none; }
 .backup { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
@@ -77,7 +78,7 @@ canvas { width: 100%; height: 320px; background: #e9efe6; border-radius: 12px; b
 </header>
 
 <main class="stack">
-  <p class="muted" style="margin:0">Mark the first and last tree of each row, enter how many trees are in it, and the app places every tree in between.
+  <p class="muted" style="margin:0">Quick way: mark the first and last tree of a row and enter how many trees are in it; the app places every tree in between. Exact way: “Mark trees one by one” walks you down the row tree by tree. You can mix both; every marked tree is used.
     Stand still at the trunk while it reads GPS.</p>
 
   <div id="rows" class="stack"></div>
@@ -173,23 +174,40 @@ function distM(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * k) * Math.cos(b.lat * k) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-// Every tree of a row, evenly spaced from first to last.
+// GPS-marked trees of a row ("anchors"): the first and last tree plus any
+// single trees marked on their own (row.marks = { treeNumber: fix }).
+function anchorsOf(row) {
+  const out = [];
+  if (row.first) out.push({ ...row.first, n: 1 });
+  for (const [k, f] of Object.entries(row.marks || {})) { const n = +k; if (n > 1 && n < row.count) out.push({ ...f, n }); }
+  if (row.last && row.count > 1) out.push({ ...row.last, n: row.count });
+  return out.sort((a, b) => a.n - b.n);
+}
+// Every tree of a row. A marked tree uses its own GPS position; any other tree
+// is spaced evenly between the nearest marked trees on either side (past the
+// last mark, the line of the nearest two marks is continued).
 function treesOfRow(row) {
-  if (!row.first || !row.last || row.count < 1) return [];
+  const A = anchorsOf(row);
+  if (A.length < 2 || row.count < 1) return [];
   const out = [];
   for (let i = 1; i <= row.count; i++) {
-    const f = row.count === 1 ? 0 : (i - 1) / (row.count - 1);
+    let j = A.findIndex(a => a.n >= i);       // first anchor at or after tree i
+    if (j === -1) j = A.length - 1;           // after the last mark
+    if (j === 0) j = 1;                       // before the first mark
+    const a = A[j - 1], b = A[j], exact = A.find(x => x.n === i);
+    const f = (i - a.n) / (b.n - a.n);
     out.push({
-      id: `R${row.no}-T${i}`, row: row.no, n: i,
-      lat: row.first.lat + (row.last.lat - row.first.lat) * f,
-      lng: row.first.lng + (row.last.lng - row.first.lng) * f
+      id: `R${row.no}-T${i}`, row: row.no, n: i, marked: !!exact,
+      lat: exact ? exact.lat : a.lat + (b.lat - a.lat) * f,
+      lng: exact ? exact.lng : a.lng + (b.lng - a.lng) * f
     });
   }
   return out;
 }
 function spacingOf(row) {
-  if (!row.first || !row.last || row.count < 2) return null;
-  return distM(row.first, row.last) / (row.count - 1);
+  const A = anchorsOf(row); if (A.length < 2) return null;
+  const a = A[0], b = A[A.length - 1];
+  return distM(a, b) / (b.n - a.n);
 }
 
 /* ---------- live GPS (keeps the chip up to date and warms up the receiver) ---------- */
@@ -214,7 +232,7 @@ function setChip(acc, text) {
 let marking = null;
 function startMark(row, which) {
   const reads = [], t0 = Date.now();
-  $('markTitle').textContent = `Stand still at the ${which === 'first' ? 'FIRST' : 'LAST'} tree of Row ${row.no}`;
+  $('markTitle').textContent = typeof which === 'number' ? `Stand still at tree R${row.no}-T${which}` : `Stand still at the ${which === 'first' ? 'FIRST' : 'LAST'} tree of Row ${row.no}`;
   $('markResult').hidden = true; $('markResult').innerHTML = '';
   $('markCancel').textContent = 'Cancel';
   $('markSheet').hidden = false;
@@ -260,22 +278,35 @@ function startMark(row, which) {
     } else {
       $('markAcc').innerHTML = `<span class="pill ok">±${fix.acc} m</span> from ${fix.n} readings`;
       saveEnd(row, which, fix);
-      box.innerHTML = `<button class="btn go wide" data-r="close">Done</button>`;
+      const r2 = data.rows.find(x => x.id === row.id), nx = nextTree(r2, which);
+      box.innerHTML = (nx ? `<button class="btn go wide" data-r="next">Next: mark R${row.no}-T${nx}</button>` : '') + `<button class="btn ${nx ? '' : 'go '}wide" data-r="close">Done</button>`;
     }
     $('markCancel').textContent = 'Close';
     box.onclick = e => {
       const b = e.target.closest('[data-r]'); if (!b) return;
       if (b.dataset.r === 'retry') startMark(row, which);
+      if (b.dataset.r === 'next') startMark(row, nextTree(data.rows.find(x => x.id === row.id), which));
       if (b.dataset.r === 'keep') { saveEnd(row, which, fix); $('markSheet').hidden = true; }
       if (b.dataset.r === 'close') $('markSheet').hidden = true;
     };
   }
 }
 $('markCancel').onclick = () => { if (marking) { marking.stop(); marking = null; } $('markSheet').hidden = true; };
+// which = 'first' | 'last' | a tree number. Tree 1 and the last tree are the row ends.
 function saveEnd(row, which, fix) {
   const r = data.rows.find(x => x.id === row.id); if (!r) return;
-  r[which] = fix; save(); render();
-  toast(`Row ${r.no}: ${which} tree saved (±${fix.acc} m)`);
+  let n = which;
+  if (n === 1) which = 'first'; else if (n === r.count) which = 'last';
+  if (typeof which === 'number') { r.marks = r.marks || {}; r.marks[n] = fix; }
+  else r[which] = fix;
+  save(); render();
+  toast(typeof which === 'number' ? `R${r.no}-T${n} saved (±${fix.acc} m)` : `Row ${r.no}: ${which} tree saved (±${fix.acc} m)`);
+}
+// After marking tree n while walking a row: the next tree number, or null at the end.
+function nextTree(row, which) {
+  if (!row) return null;
+  const n = which === 'first' ? 1 : which === 'last' ? row.count : which;
+  return typeof which === 'number' && n < row.count ? n + 1 : null;
 }
 
 /* keep the screen on while marking (ignored where not supported) */
@@ -308,7 +339,7 @@ function render() {
   if (!data.rows.length) box.innerHTML = `<div class="card"><b>No rows yet.</b><span class="muted">Tap “Add row”, walk to the first tree of row 1 and mark it.</span></div>`;
   else box.innerHTML = data.rows.slice().sort((a, b) => a.no - b.no).map(row => {
     const sp = spacingOf(row), trees = treesOfRow(row);
-    let spHtml = '<span class="muted">Mark both ends to place the trees</span>';
+    let spHtml = '<span class="muted">Mark 2 trees to place the rest</span>';
     if (sp != null) {
       const ok = sp >= SPACING_OK[0] && sp <= SPACING_OK[1];
       spHtml = `<span class="pill ${ok ? 'ok' : 'warn'}">${sp.toFixed(1)} m apart</span>` +
@@ -321,8 +352,9 @@ function render() {
         <div class="count"><button data-step="-1" aria-label="One fewer tree">−</button>
           <input type="number" inputmode="numeric" min="1" max="500" value="${row.count}" data-count aria-label="Trees in row ${row.no}">
           <button data-step="1" aria-label="One more tree">+</button></div></div>
-      ${trees.length ? `<details><summary class="muted">Show ${trees.length} tree IDs (R${row.no}-T1 … R${row.no}-T${row.count})</summary>
-        <div class="trees" style="margin-top:8px">${trees.map(t => `<button type="button" class="tree" data-tree="${t.id}">${t.id}</button>`).join('')}</div></details>` : ''}
+      ${trees.length ? `<details><summary class="muted">Show ${trees.length} tree IDs, ${trees.filter(t => t.marked).length} GPS marked (R${row.no}-T1 … R${row.no}-T${row.count})</summary>
+        <div class="trees" style="margin-top:8px">${trees.map(t => `<button type="button" class="tree${t.marked ? ' on' : ''}" data-tree="${t.id}">${t.id}</button>`).join('')}</div></details>` : ''}
+      <button class="btn small" data-walk>Mark trees one by one${Object.keys(row.marks || {}).length ? ` (${Object.keys(row.marks).length} marked)` : ''}</button>
       <button class="btn bad small" data-del>Delete row ${row.no}</button>
     </section>`;
   }).join('');
@@ -335,7 +367,12 @@ $('rows').addEventListener('click', e => {
   const card = e.target.closest('[data-row]'); if (!card) return;
   const row = data.rows.find(r => r.id === card.dataset.row); if (!row) return;
   const mark = e.target.closest('[data-mark]'), step = e.target.closest('[data-step]'), tb = e.target.closest('[data-tree]');
-  if (tb) showTree(treesOfRow(row).find(t => t.id === tb.dataset.tree));
+  if (tb) showTree(treesOfRow(row).find(t => t.id === tb.dataset.tree), row);
+  else if (e.target.closest('[data-walk]')) {
+    if (!('geolocation' in navigator) || !window.isSecureContext) return toast('GPS needs the https link of this app.');
+    const done = anchorsOf(row).map(a => a.n); let n = 1; while (done.includes(n) && n < row.count) n++;
+    startMark(row, n);
+  }
   else if (mark) {
     if (!('geolocation' in navigator) || !window.isSecureContext) return toast('GPS needs the https link of this app.');
     startMark(row, mark.dataset.mark);
@@ -348,16 +385,26 @@ $('rows').addEventListener('change', e => {
 });
 
 /* ---------- one tree's location: tap a tree ID ---------- */
-function showTree(t) {
+function showTree(t, row) {
   if (!t) return;
   const ll = `${t.lat.toFixed(6)}, ${t.lng.toFixed(6)}`;
   const away = lastFix ? `<div class="muted">You are ${distM(lastFix, t).toFixed(0)} m from this tree.</div>` : '';
-  $('askText').innerHTML = `<div style="font-size:34px">${t.id}</div><div style="font-size:20px;user-select:all">${ll}</div>${away}
+  const how = t.marked ? '<span class="pill ok">GPS marked</span>' : '<span class="pill warn">Worked out from marked trees</span>';
+  const canClear = t.marked && t.n !== 1 && t.n !== row.count;
+  $('askText').innerHTML = `<div style="font-size:34px">${t.id}</div>${how}<div style="font-size:20px;user-select:all">${ll}</div>${away}
+    <button class="btn go wide" data-t="mark">${t.marked ? 'Re-mark this tree here' : 'Mark this tree here'}</button>
+    ${canClear ? '<button class="btn bad wide" data-t="clear">Remove this mark</button>' : ''}
     <a class="btn wide" href="https://maps.google.com/?q=${t.lat},${t.lng}" target="_blank" rel="noopener">Open in Maps</a>`;
+  $('askText').onclick = e => {
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    $('askSheet').hidden = true; $('askText').onclick = null;
+    if (b.dataset.t === 'mark') startMark(row, t.n);
+    if (b.dataset.t === 'clear') { delete row.marks[t.n]; save(); render(); toast(`${t.id} mark removed`); }
+  };
   $('askYes').textContent = 'Copy location'; $('askSheet').hidden = false;
-  $('askYes').onclick = () => { navigator.clipboard?.writeText(ll).then(() => toast('Location copied'), () => {}); $('askSheet').hidden = true; };
+  $('askYes').onclick = () => { navigator.clipboard?.writeText(ll).then(() => toast('Location copied'), () => {}); $('askSheet').hidden = true; $('askText').onclick = null; };
   $('askNo').textContent = 'Close';
-  $('askNo').onclick = () => { $('askSheet').hidden = true; $('askNo').textContent = 'Cancel'; };
+  $('askNo').onclick = () => { $('askSheet').hidden = true; $('askText').onclick = null; };
 }
 
 /* ---------- map: rows, trees and your position, drawn to scale ---------- */
@@ -376,7 +423,7 @@ function drawMap() {
   const sx = p => (xy(p)[0] - minX) * s + (W - (maxX - minX) * s) / 2, sy = p => (xy(p)[1] - minY) * s + (H - (maxY - minY) * s) / 2;
   g.lineWidth = 3; g.strokeStyle = '#9fb59f';
   for (const row of data.rows) { const t = treesOfRow(row); if (t.length < 2) continue;
-    g.beginPath(); g.moveTo(sx(t[0]), sy(t[0])); g.lineTo(sx(t[t.length - 1]), sy(t[t.length - 1])); g.stroke();
+    g.beginPath(); g.moveTo(sx(t[0]), sy(t[0])); for (const p of t) g.lineTo(sx(p), sy(p)); g.stroke();
     g.fillStyle = '#111a13'; g.font = 'bold 22px system-ui'; g.textAlign = 'right'; g.fillText('R' + row.no, sx(t[0]) - 10, sy(t[0]) + 8); }
   const r = Math.max(3, Math.min(9, s * 2.2));
   g.fillStyle = '#1f7a3a'; for (const t of trees) { g.beginPath(); g.arc(sx(t), sy(t), r, 0, 7); g.fill(); }
@@ -392,7 +439,7 @@ function drawMap() {
 $('exportBtn').onclick = async () => {
   const name = `palm-yield-backup-${new Date().toISOString().slice(0, 10)}.json`;
   const blob = new Blob([JSON.stringify({ app: 'palm-yield-tracker', exported: new Date().toISOString(), ...data,
-    trees: data.rows.flatMap(treesOfRow).map(t => ({ id: t.id, lat: +t.lat.toFixed(7), lng: +t.lng.toFixed(7) })) }, null, 1)], { type: 'application/json' });
+    trees: data.rows.flatMap(treesOfRow).map(t => ({ id: t.id, lat: +t.lat.toFixed(7), lng: +t.lng.toFixed(7), marked: t.marked })) }, null, 1)], { type: 'application/json' });
   const file = new File([blob], name, { type: 'application/json' });
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
