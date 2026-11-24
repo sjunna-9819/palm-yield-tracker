@@ -397,6 +397,7 @@ function setTab(name, push = true) {
   if (!TABS.includes(name) || (name === 'setup' && !S.canEdit)) name = 'count';
   tab = name;
   showSurvey(name === 'survey');
+  setTimeout(autoNear, 0);
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('sub', name === 'survey' && b.dataset.tab === 'palms'));
   document.querySelectorAll('section[data-view]').forEach(s => s.hidden = s.dataset.view !== name);
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name || (name === 'survey' && b.dataset.tab === 'palms')));
@@ -465,6 +466,7 @@ function kpi(v, label, alert, jump, sw) {
 function pillsFor(s) { return STAGES.filter(x => +s[x.k] > 0).map(x => `<span class="pill"><i style="background:var(${x.css})"></i>${nf(+s[x.k])}</span>`).join(''); }
 function renderAll() {
   refreshBlocks();
+  setTimeout(autoNear, 0);
   const c = S.config;
   $('farmName').textContent = (c && c.name) || 'Palm Bunch Register';
   $('farmSub').textContent = c ? blocks().map(b => `${b.id}: ${t('acresShort', String(+b.acres || 0), nf(+b.palms || 0))}`).join('  ·  ') : '';
@@ -960,8 +962,18 @@ function renderNear() {
   $('nearBtn').classList.toggle('go', nearMode);
   $('nearOut').hidden = !nearMode;
 }
+/* GPS find runs by itself on the Count tab once any palm has a saved spot,
+   unless the user switched it off this session. Other tabs stop it (saves battery). */
+let nearOff = false;
+function autoNear() {
+  const want = tab === 'count' && !nearOff && Object.values(S.palms).some(p => p && p.loc);
+  if (want === nearMode) return;
+  nearMode = want; autoId = null;
+  if (nearMode) { $('nearStat').textContent = t('nearWait'); $('nearList').innerHTML = ''; $('nearHead').hidden = true; if (lastFix) onFix(lastFix); }
+  renderNear(); gpsSync();
+}
 $('nearBtn').onclick = () => {
-  nearMode = !nearMode; autoId = null;
+  nearMode = !nearMode; autoId = null; nearOff = !nearMode;
   if (nearMode) { $('nearStat').textContent = t('nearWait'); $('nearList').innerHTML = ''; $('nearHead').hidden = true; if (lastFix) onFix(lastFix); }
   renderNear(); gpsSync();
 };
