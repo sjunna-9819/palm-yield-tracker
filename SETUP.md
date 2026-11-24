@@ -1,3 +1,28 @@
+# Palm Farm app
+
+One app for the whole farm: bunch counts (Count, Dashboard), the palm map, GPS survey of rows,
+Farm 1 / Farm 2 in 3D, mill tickets and setup. Live at https://sjunna-9819.github.io/palm-yield-tracker/
+
+```mermaid
+flowchart LR
+  S[Survey rows with GPS] -->|Use for palm map| L[Block layout: rows + positions]
+  L --> M[Palms tab map, row by row]
+  S -->|same phone| D[Farm 1 / Farm 2 in 3D]
+  C[Count a palm] --> P[(palms)]
+  T[Mill ticket] --> K[(tickets)]
+  P --> DB[Dashboard]
+  K --> DB
+  subgraph Storage
+    Ph[Phone only: localStorage] -.Setup: copy to farm database.-> FB[Firebase: shared by all phones]
+  end
+```
+
+- **Phone-only mode** (now): works without any account; data stays on the phone. Setup → Export/Import data.
+- **Shared mode**: fill in `src/firebase-config.js` (steps below), publish, then Setup → "Copy this phone's data to the farm database".
+- **Publish the website**: `./deploy.sh` (builds, then pushes `dist/` to the `gh-pages` branch).
+- **3D farms**: sources in `farms/` (`python3 farms/build.py` makes `src/public/farm1.html`, `farm2.html`).
+- `legacy/` holds the first single-file survey app.
+
 # Palm Bunch Register — mobile app setup
 
 Android + iPhone app built with Capacitor from the same screens as the claude.ai version.
