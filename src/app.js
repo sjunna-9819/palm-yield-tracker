@@ -5,7 +5,7 @@ import '@fontsource/mandali/400.css';
 import qrcode from 'qrcode-generator';
 import { jsPDF } from 'jspdf';
 import { claude, scanTag, getLocation, watchLocation, localData, isShared, uploadLocal } from './platform.js';
-import { initSurvey, showSurvey, refreshBlocks } from './survey.js';
+import { initSurvey, showSurvey, refreshBlocks, averageGps } from './survey.js';
 (() => {
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -36,6 +36,10 @@ const T = {
   saveTicket:'Save ticket', tickets:'Mill tickets', setup:'Farm setup', farmNameL:'Farm name', blockId:'Block', acres:'Acres',
   palms:'Palms', planted:'Planted (year)', addBlock:'Add block', saveSetup:'Save setup',
   setupHint:'Palm numbers run 1 to the palm count in each block. Tag IDs look like B01-0001.',
+  tgOpen:'Tag palms with GPS', tgMark:'Mark location here', tgSkip:'Skip to next untagged', tgClear:'Remove saved spot', tgMapT:'Tagged palms', tgMapHint:'Green dots are tagged palms, the orange one is the palm selected above, blue is you. Tap a dot to select it.',
+  tgListT:'All palms', tgLegTag:'tagged', tgLegNo:'not tagged', tgLegCur:'selected', tgCount:'{0} of {1} palms tagged', tgTagged:'Tagged ±{0} m', tgNot:'Not tagged yet',
+  tgAway:'You are {0} m from this palm’s saved spot.', tgNearest:'Nearest tagged palm: {0}, {1} m away.', tgStand:'Stand at the trunk of {0}', tgSaved:'{0} tagged (±{1} m)', tgAveraged:'{0}: reading added, now ±{1} m',
+  tgFarAsk:'This reading is {0} m from where {1} was saved before. Replace the saved spot?', tgReplace:'Replace', tgClearAsk:'Remove the saved GPS spot of {0}?', tgAll:'Every palm in this block is tagged.', tgMapEmpty:'No palms tagged yet',
   fieldTools:'Field survey and 3D', svOpen:'Survey rows with GPS', farm1_3d:'Farm 1 in 3D', farm2_3d:'Farm 2 in 3D', fieldToolsHint:'Survey: mark trees with GPS row by row. The 3D farms place palms from the survey of the block shown on the map above.',
   svBack:'‹ Palms', svIntro:'Quick way: mark the first and last tree of a row and set how many trees are in it; the trees in between are placed for you. Exact way: "Mark trees one by one". You can mix both. Stand still at the trunk while it reads GPS.',
   svAdd:'+ Add row', svMapT:'Survey map', svApply:'Use for palm map', svExportB:'Export survey (JSON)', svApplyHint:'"Use for palm map" sets this block\'s rows and GPS positions, so palm numbers run row by row (row 1 first). Owner only.',
@@ -111,6 +115,10 @@ const T = {
   saveTicket:'టికెట్ సేవ్ చేయి', tickets:'మిల్లు టికెట్లు', setup:'తోట వివరాలు', farmNameL:'తోట పేరు', blockId:'బ్లాక్', acres:'ఎకరాలు',
   palms:'చెట్లు', planted:'నాటిన సంవత్సరం', addBlock:'బ్లాక్ జోడించు', saveSetup:'సేవ్ చేయి',
   setupHint:'ప్రతి బ్లాక్‌లో చెట్లకు 1 నుండి నంబర్లు. ట్యాగ్ ID ఇలా ఉంటుంది: B01-0001.',
+  tgOpen:'GPS తో చెట్లకు గుర్తు', tgMark:'ఇక్కడ స్థానం గుర్తు పెట్టు', tgSkip:'తర్వాత గుర్తు లేని చెట్టు', tgClear:'సేవ్ అయిన స్థానం తీసివేయి', tgMapT:'గుర్తు ఉన్న చెట్లు', tgMapHint:'ఆకుపచ్చ చుక్కలు గుర్తు ఉన్న చెట్లు, నారింజ రంగు పైన ఎంచిన చెట్టు, నీలం మీరు. ఎంచడానికి చుక్కను నొక్కండి.',
+  tgListT:'అన్ని చెట్లు', tgLegTag:'గుర్తు ఉంది', tgLegNo:'గుర్తు లేదు', tgLegCur:'ఎంచినది', tgCount:'{1} లో {0} చెట్లకు గుర్తు', tgTagged:'గుర్తు ఉంది ±{0} మీ', tgNot:'ఇంకా గుర్తు లేదు',
+  tgAway:'ఈ చెట్టు సేవ్ అయిన స్థానానికి మీరు {0} మీ దూరంలో ఉన్నారు.', tgNearest:'దగ్గరి గుర్తు ఉన్న చెట్టు: {0}, {1} మీ దూరం.', tgStand:'{0} కాండం దగ్గర నిలబడండి', tgSaved:'{0} గుర్తు సేవ్ అయింది (±{1} మీ)', tgAveraged:'{0}: రీడింగ్ జోడించాం, ఇప్పుడు ±{1} మీ',
+  tgFarAsk:'ఈ రీడింగ్ {1} ముందు సేవ్ అయిన చోటుకు {0} మీ దూరంలో ఉంది. స్థానం మార్చాలా?', tgReplace:'మార్చు', tgClearAsk:'{0} GPS స్థానం తీసివేయాలా?', tgAll:'ఈ బ్లాక్‌లో అన్ని చెట్లకు గుర్తు ఉంది.', tgMapEmpty:'ఇంకా ఏ చెట్టుకూ గుర్తు లేదు',
   fieldTools:'సర్వే మరియు 3D', svOpen:'GPS తో వరుసల సర్వే', farm1_3d:'తోట 1 3D లో', farm2_3d:'తోట 2 3D లో', fieldToolsHint:'సర్వే: వరుస వారీగా చెట్లకు GPS గుర్తు పెట్టండి. 3D తోటలు పై మ్యాప్‌లో చూపిన బ్లాక్ సర్వే నుండి చెట్లను పెడతాయి.',
   svBack:'‹ చెట్లు', svIntro:'త్వరగా: వరుసలో మొదటి, చివరి చెట్టుకు గుర్తు పెట్టి, ఎన్ని చెట్లో రాయండి; మధ్యవి తానే వస్తాయి. ఖచ్చితంగా: "ఒక్కో చెట్టుకు గుర్తు". రెండూ కలిపి వాడవచ్చు. GPS చదివేటప్పుడు కాండం దగ్గర కదలకుండా నిలబడండి.',
   svAdd:'+ వరుస జోడించు', svMapT:'సర్వే మ్యాప్', svApply:'చెట్ల మ్యాప్‌కు వాడు', svExportB:'సర్వే ఎగుమతి (JSON)', svApplyHint:'"చెట్ల మ్యాప్‌కు వాడు" ఈ బ్లాక్ వరుసలు, GPS స్థానాలు సెట్ చేస్తుంది; చెట్ల నంబర్లు వరుస 1 నుండి వస్తాయి. యజమానికి మాత్రమే.',
@@ -391,16 +399,17 @@ function renderGuide() {
 }
 
 /* ---------- tabs + hash ---------- */
-const TABS = ['count', 'dash', 'palms', 'mill', 'setup', 'guide', 'survey'];
+const TABS = ['count', 'dash', 'palms', 'mill', 'setup', 'guide', 'survey', 'tag'];
 let tab = 'count';
 function setTab(name, push = true) {
   if (!TABS.includes(name) || (name === 'setup' && !S.canEdit)) name = 'count';
   tab = name;
   showSurvey(name === 'survey');
+  showTag(name === 'tag');
   setTimeout(autoNear, 0);
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('sub', name === 'survey' && b.dataset.tab === 'palms'));
   document.querySelectorAll('section[data-view]').forEach(s => s.hidden = s.dataset.view !== name);
-  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name || (name === 'survey' && b.dataset.tab === 'palms')));
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name || ((name === 'survey' || name === 'tag') && b.dataset.tab === 'palms')));
   $('helpBtn').setAttribute('aria-pressed', name === 'guide');
   if (push && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo(0, 0);
@@ -466,6 +475,7 @@ function kpi(v, label, alert, jump, sw) {
 function pillsFor(s) { return STAGES.filter(x => +s[x.k] > 0).map(x => `<span class="pill"><i style="background:var(${x.css})"></i>${nf(+s[x.k])}</span>`).join(''); }
 function renderAll() {
   refreshBlocks();
+  if (tab === 'tag') renderTag();
   setTimeout(autoNear, 0);
   const c = S.config;
   $('farmName').textContent = (c && c.name) || 'Palm Bunch Register';
@@ -927,6 +937,126 @@ $('pGpsBtn').onclick = async () => {
     await writePalm(id, body => { body.loc = g; }); buzz(25);
     if (curPalm === id) { $('pGps').textContent = gpsText({ loc: g }); $('pGpsBtn').textContent = t('gpsImprove'); }
   } catch { toast(t('gpsFail')); } finally { b.disabled = false; if (curPalm === id) renderPalm(); }
+};
+
+/* ---------- Tag palms: walk the farm and mark each palm's GPS spot ----------
+   One palm is selected at a time. "Mark location here" averages 5-10 s of GPS and
+   saves it as the palm's spot (palms/<id>.loc); a second mark close to the first is
+   averaged in, a far one asks before replacing. Then the next untagged palm is selected. */
+let tgBlock = null, tgN = 1, tgFix = null, tgStop = null, tgView = null, tgPicked = false;   // tgPicked: user chose a palm; until then follow the first untagged
+const tgB = () => blockOf(tgBlock) || blocks()[0] || null;
+const tgId = () => tgB() ? palmId(tgB().id, tgN) : null;
+const locOf = id => S.palms[id] && S.palms[id].loc;
+function showTag(on) {
+  if (!on) { if (tgStop) { tgStop(); tgStop = null; } return; }
+  const bs = blocks(); if (!bs.find(b => b.id === tgBlock)) { tgBlock = bs[0] ? bs[0].id : null; tgN = firstUntagged(1) || 1; }
+  if (!tgStop) {
+    $('tgGps').textContent = t('svWaiting'); $('tgDot').className = 'sv-dot';
+    watchLocation(f => { tgFix = f; $('tgDot').className = 'sv-dot ' + (f.acc <= 5 ? 'g' : f.acc <= 8 ? 'a' : 'r'); $('tgGps').textContent = `GPS ±${nf(f.acc, 1)} m`; renderTagLive(); })
+      .then(stop => { if (tab === 'tag') tgStop = stop; else stop(); }).catch(() => { $('tgGps').textContent = t('svGpsOff'); });
+  }
+  renderTag();
+}
+function firstUntagged(from) {
+  const b = tgB(); if (!b) return null;
+  for (let k = 0; k < +b.palms; k++) { const n = ((from - 1 + k) % +b.palms) + 1; if (!locOf(palmId(b.id, n))) return n; }
+  return null;
+}
+function renderTag() {
+  if (!tgBlock && blocks().length) tgBlock = blocks()[0].id;
+  if (!tgPicked && tgB()) tgN = firstUntagged(1) || 1;
+  const b = tgB();
+  $('tgBlock').innerHTML = blocks().map(x => `<option value="${esc(x.id)}">${esc(x.id)}</option>`).join('');
+  if (!b) { $('tgId').textContent = '—'; $('tgList').innerHTML = `<div class="hint">${esc(t('svNoBlock'))}</div>`; return; }
+  $('tgBlock').value = b.id;
+  tgN = Math.min(Math.max(1, tgN), +b.palms || 1);
+  const id = tgId(), loc = locOf(id), rt = rowTreeOf(b, tgN);
+  $('tgId').textContent = id;
+  $('tgSub').textContent = rt ? t('rowTree', rt[0], rt[1]) : '';
+  $('tgState').textContent = loc ? t('tgTagged', nf(loc.acc, 1)) : t('tgNot');
+  $('tgState').className = 'sv-pill ' + (loc ? 'ok' : '');
+  $('tgClear').hidden = !loc;
+  $('tgPrev').disabled = tgN <= 1; $('tgNext').disabled = tgN >= +b.palms;
+  let n = 0; for (let i = 1; i <= +b.palms; i++) if (locOf(palmId(b.id, i))) n++;
+  $('tgCount').textContent = t('tgCount', nf(n), nf(+b.palms));
+  $('tgBar').style.width = (b.palms ? 100 * n / b.palms : 0) + '%';
+  // palm numbers grouped by field row (or lines of 20 before a layout exists)
+  const groups = Array.isArray(b.rows) && b.rows.length ? b.rows : Array.from({ length: Math.ceil(+b.palms / 10) }, (_, i) => Math.min(10, +b.palms - i * 10));
+  let h = '', k = 0;
+  groups.forEach((c, r) => {
+    h += `<div class="tg-row"><b>${Array.isArray(b.rows) && b.rows.length ? 'R' + (r + 1) : ''}</b><div>`;
+    for (let j = 0; j < c; j++) { k++; const pid = palmId(b.id, k); h += `<button data-tg="${k}" class="${locOf(pid) ? 'on' : ''}${k === tgN ? ' cur' : ''}" aria-label="${pid}">${k}</button>`; }
+    h += '</div></div>';
+  });
+  $('tgList').innerHTML = h;
+  renderTagLive();
+}
+/* the parts that change with every GPS reading: distance line + map */
+function renderTagLive() {
+  if (tab !== 'tag') return;
+  const b = tgB(); if (!b) return;
+  const id = tgId(), loc = locOf(id);
+  let msg = '';
+  if (tgFix && loc) msg = t('tgAway', nf(metres(tgFix, loc), 1));
+  else if (tgFix) { const nr = nearest(tgFix, 1)[0]; if (nr) msg = t('tgNearest', nr.id, nf(nr.d, 1)); }
+  $('tgAway').textContent = msg;
+  drawTagMap();
+}
+function drawTagMap() {
+  const cv = $('tgMap'), g = cv.getContext('2d'), W = cv.width, H = cv.height, css = getComputedStyle(document.documentElement);
+  const col = n => css.getPropertyValue(n).trim();
+  g.clearRect(0, 0, W, H);
+  const b = tgB(); if (!b) return;
+  const pts = [];
+  for (let i = 1; i <= +b.palms; i++) { const l = locOf(palmId(b.id, i)); if (l) pts.push({ ...l, n: i }); }
+  if (!pts.length && !tgFix) { g.fillStyle = col('--muted'); g.font = '28px system-ui'; g.textAlign = 'center'; g.fillText(t('tgMapEmpty'), W / 2, H / 2); tgView = null; return; }
+  const all = pts.slice(); if (tgFix) all.push(tgFix);
+  const o = all[0], kx = 111320 * Math.cos(o.lat * Math.PI / 180), ky = 110540;
+  const xy = p => [(p.lng - o.lng) * kx, -(p.lat - o.lat) * ky];
+  const P = all.map(xy), xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+  const pad = 8, minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+  const s = Math.min(W / Math.max(20, maxX - minX), H / Math.max(16, maxY - minY));
+  const ox = (W - (maxX - minX) * s) / 2, oy = (H - (maxY - minY) * s) / 2;
+  const sx = p => (xy(p)[0] - minX) * s + ox, sy = p => (xy(p)[1] - minY) * s + oy;
+  const r = Math.max(5, Math.min(16, s * 1.8));
+  for (const p of pts) {
+    g.fillStyle = p.n === tgN ? col('--fruit') : col('--ok'); g.beginPath(); g.arc(sx(p), sy(p), p.n === tgN ? r * 1.35 : r, 0, 7); g.fill();
+    if (r >= 9) { g.fillStyle = col('--leaf-ink'); g.font = `600 ${Math.round(r * 0.95)}px system-ui`; g.textAlign = 'center'; g.fillText(p.n, sx(p), sy(p) + r * 0.33); }
+  }
+  if (tgFix) {
+    g.fillStyle = 'rgba(29,95,209,.18)'; g.beginPath(); g.arc(sx(tgFix), sy(tgFix), Math.max(6, tgFix.acc * s), 0, 7); g.fill();
+    g.fillStyle = '#1d5fd1'; g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(sx(tgFix), sy(tgFix), 10, 0, 7); g.fill(); g.stroke();
+  }
+  g.fillStyle = col('--ink'); g.fillRect(16, H - 22, 10 * s, 5); g.font = '20px system-ui'; g.textAlign = 'left'; g.fillText('10 m', 16, H - 30);
+  tgView = { pts: pts.map(p => ({ n: p.n, x: sx(p), y: sy(p) })) };
+}
+$('goTag').onclick = () => setTab('tag');
+$('tgBack').onclick = () => setTab('palms');
+$('tgBlock').onchange = e => { tgBlock = e.target.value; tgPicked = false; tgN = firstUntagged(1) || 1; renderTag(); };
+$('tgPrev').onclick = () => { tgPicked = true; tgN--; renderTag(); };
+$('tgNext').onclick = () => { tgPicked = true; tgN++; renderTag(); };
+$('tgSkip').onclick = () => { tgPicked = true; const n = firstUntagged(tgN + 1); if (n) { tgN = n; renderTag(); } else toast(t('tgAll')); };
+$('tgList').addEventListener('click', e => { const b = e.target.closest('[data-tg]'); if (b) { tgPicked = true; tgN = +b.dataset.tg; renderTag(); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
+$('tgMap').addEventListener('click', e => {
+  if (!tgView || !tgView.pts.length) return;
+  const rc = e.currentTarget.getBoundingClientRect(), x = (e.clientX - rc.left) * $('tgMap').width / rc.width, y = (e.clientY - rc.top) * $('tgMap').height / rc.height;
+  let best = null, bd = 1e9; for (const p of tgView.pts) { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } }
+  if (best && bd < 60) { tgPicked = true; tgN = best.n; renderTag(); }
+});
+$('tgClear').onclick = () => { const id = tgId(); confirmBox(t('tgClearAsk', id), async () => { try { await writePalm(id, body => { delete body.loc; }); } catch { toast(t('saveFailed')); } }); };
+$('tgMark').onclick = async () => {
+  if (!db) return;
+  const id = tgId(), b = tgB(); if (!id) return;
+  tgPicked = true;
+  const fix = await averageGps(t('tgStand', id), t); if (!fix) return;
+  const old = locOf(id), f = { lat: fix.lat, lng: fix.lng, acc: fix.acc, t: fix.t };
+  const save = async (loc, msg) => {
+    try { await writePalm(id, body => { body.loc = loc; }); buzz(30); toast(msg); } catch { toast(t('saveFailed')); return; }
+    const n = firstUntagged(tgN + 1); if (n && b && tgB() && tgB().id === b.id) tgN = n; renderTag(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const merged = mergeLoc(old, f);
+  if (merged) return save(merged, old ? t('tgAveraged', id, nf(merged.acc, 1)) : t('tgSaved', id, nf(merged.acc, 1)));
+  confirmBox(t('tgFarAsk', nf(metres(old, f), 0), id), () => save(mergeLoc(null, f), t('tgSaved', id, nf(f.acc, 1))));
 };
 
 /* ---------- find palm by GPS: auto-open within 2.5 m (8 ft) ---------- */

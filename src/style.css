@@ -313,3 +313,18 @@ table.setup input { width: 100%; min-width: 56px; box-sizing: border-box; height
 .sv-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .sv-ring .lbl { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .sv-ring .lbl b { font-family: var(--f-num); font-size: 36px; }
+
+/* ---------- tag palms ---------- */
+.tg-cur { display: flex; flex-direction: column; gap: 12px; }
+.tg-head { display: flex; align-items: center; gap: 8px; }
+.tg-mid { flex: 1; text-align: center; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tg-away { text-align: center; min-height: 1.4em; }
+.tg-mark { min-height: 66px; font-size: 20px; width: 100%; }
+#tgMap { width: 100%; height: auto; aspect-ratio: 5 / 4; background: var(--bg); border-radius: 12px; border: 1px solid var(--line); touch-action: manipulation; }
+.tg-list { display: flex; flex-direction: column; gap: 8px; }
+.tg-row { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.tg-row > b { font-family: var(--f-num); font-size: 14px; color: var(--muted); width: 26px; flex: none; }
+.tg-row > div { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.tg-list button { min-width: 33px; height: 34px; padding: 0 3px; border-radius: 8px; background: var(--h0); font-family: var(--f-num); font-weight: 600; font-size: 13px; color: var(--ink); }
+.tg-list button.on { background: var(--ok); color: var(--leaf-ink); }
+.tg-list button.cur { outline: 3px solid var(--fruit); outline-offset: 1px; }

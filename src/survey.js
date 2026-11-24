@@ -127,6 +127,7 @@ async function startMark(row, which) {
   $('svMarkTitle').textContent = typeof which === 'number' ? t('svStandAt', `R${row.no}-T${which}`) : t(which === 'first' ? 'svStandFirst' : 'svStandLast', row.no);
   $('svMarkResult').hidden = true; $('svMarkResult').innerHTML = '';
   $('svMarkCancel').textContent = t('svCancel');
+  $('svMarkCancel').onclick = () => { if (marking) { marking.stop(); marking = null; } $('svMark').hidden = true; };
   $('svMark').hidden = false; keepAwake(true);
   let stopWatch = null;
   try { stopWatch = await watchLocation(f => reads.push(f)); } catch { return showResult(null, t('gpsFail')); }
@@ -303,4 +304,51 @@ function drawMap() {
     g.fillStyle = '#1d5fd1'; g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(sx(lastFix), sy(lastFix), 10, 0, 7); g.fill(); g.stroke();
   }
   g.fillStyle = ink; g.fillRect(16, H - 22, 10 * s, 5); g.font = '20px system-ui'; g.textAlign = 'left'; g.fillText('10 m', 16, H - 30);
+}
+
+/* ---------- averaged GPS reading for any screen ----------
+   Shows the ring sheet, averages 5-10 s of readings and resolves with
+   { lat, lng, acc, best, n, t }, or null if cancelled / no reading. */
+export function averageGps(title, t) {
+  return new Promise(async resolve => {
+    const reads = [], t0 = Date.now();
+    let done = false, stopWatch = null, tick = null;
+    const end = v => { if (done) return; done = true; clearInterval(tick); stopWatch && stopWatch(); keepAwake(false); resolve(v); };
+    $('svMarkTitle').textContent = title;
+    $('svMarkResult').hidden = true; $('svMarkResult').innerHTML = '';
+    $('svMarkCancel').textContent = t('svCancel');
+    $('svMarkCancel').onclick = () => { $('svMark').hidden = true; end(null); };
+    $('svMark').hidden = false; keepAwake(true);
+    try { stopWatch = await watchLocation(f => reads.push(f)); } catch { stopWatch = null; }
+    tick = setInterval(() => {
+      const ms = Date.now() - t0, f = Math.min(1, ms / MARK_MAX_MS);
+      $('svArc').style.strokeDashoffset = String(276.5 * (1 - f));
+      $('svSecs').textContent = Math.ceil(Math.max(0, MARK_MAX_MS - ms) / 1000);
+      $('svReads').textContent = t('svReads', reads.length);
+      const best = reads.length ? Math.min(...reads.map(r => r.acc)) : null;
+      $('svMarkAcc').textContent = best == null ? t('svWaiting') : t('svBest', best.toFixed(1));
+      if ((ms >= MARK_MIN_MS && best != null && best <= 3 && reads.length >= 5) || ms >= MARK_MAX_MS) finish();
+    }, 250);
+    function finish() {
+      clearInterval(tick); stopWatch && stopWatch(); stopWatch = null; keepAwake(false);
+      const box = $('svMarkResult'); box.hidden = false;
+      if (!reads.length) {
+        $('svMarkAcc').textContent = t('svNoReading');
+        box.innerHTML = `<button class="btn go" data-r="retry">${esc(t('svRetry'))}</button>`;
+      } else {
+        const best = Math.min(...reads.map(r => r.acc)), use = reads.filter(r => r.acc <= Math.max(best * 2, best + 3));
+        let w = 0, lat = 0, lng = 0, accSum = 0;
+        for (const r of use) { const k = 1 / (r.acc * r.acc); w += k; lat += r.lat * k; lng += r.lng * k; accSum += r.acc; }
+        const fix = { lat: +(lat / w).toFixed(7), lng: +(lng / w).toFixed(7), acc: +(accSum / use.length).toFixed(1), best: +best.toFixed(1), n: use.length, t: Date.now() };
+        if (fix.acc <= ACC_LIMIT_M) { $('svMark').hidden = true; end(fix); return; }
+        $('svMarkAcc').innerHTML = `<span class="sv-pill warn">±${fix.acc} m</span> ${esc(t('svWorse', ACC_LIMIT_M))}`;
+        box.innerHTML = `<div class="hint">${esc(t('svWaitRetry'))}</div><button class="btn go" data-r="retry">${esc(t('svRetry'))}</button><button class="btn" data-r="keep">${esc(t('svKeep'))}</button>`;
+        box.onclick = e => { const b = e.target.closest('[data-r]'); if (!b) return;
+          if (b.dataset.r === 'keep') { $('svMark').hidden = true; end(fix); }
+          if (b.dataset.r === 'retry') { $('svMark').hidden = true; done = true; averageGps(title, t).then(resolve); } };
+        return;
+      }
+      box.onclick = e => { const b = e.target.closest('[data-r]'); if (b && b.dataset.r === 'retry') { $('svMark').hidden = true; done = true; averageGps(title, t).then(resolve); } };
+    }
+  });
 }
