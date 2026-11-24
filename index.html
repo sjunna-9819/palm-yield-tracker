@@ -31,7 +31,7 @@ button { font: inherit; cursor: pointer; }
 .gps { min-width: 0; max-width: 100%; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; padding: 8px 12px; border-radius: 999px; background: var(--card); border: 2px solid var(--line); }
 .dot { width: 14px; height: 14px; border-radius: 50%; background: #9aa39b; flex: none; }
 .dot.g { background: var(--green); } .dot.a { background: #f0a000; } .dot.r { background: var(--red); }
-.btn { min-height: 56px; padding: 0 18px; border-radius: 12px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); font-weight: 700; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn { text-decoration: none; min-height: 56px; padding: 0 18px; border-radius: 12px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); font-weight: 700; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .btn.go { background: var(--green); border-color: var(--green); color: #fff; }
 .btn.warn { background: var(--amber); border-color: var(--amber); color: #fff; }
 .btn.bad { border-color: var(--red); color: var(--red); }
@@ -54,7 +54,7 @@ button { font: inherit; cursor: pointer; }
 .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 14px; font-weight: 700; }
 .pill.ok { background: #dff2e4; color: var(--green-dark); } .pill.warn { background: #ffefd2; color: #7a4a00; } .pill.bad { background: #fde2df; color: var(--red); }
 .trees { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; font-size: 14px; }
-.trees span { background: #eef3ec; border-radius: 8px; padding: 6px; text-align: center; font-weight: 600; }
+.trees .tree { background: #eef3ec; border: 0; border-radius: 8px; padding: 10px 6px; text-align: center; font-weight: 600; color: var(--ink); }
 canvas { width: 100%; height: 320px; background: #e9efe6; border-radius: 12px; border: 2px solid var(--line); touch-action: none; }
 .backup { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
 /* full-screen sheets: GPS marking and confirmations */
@@ -322,7 +322,7 @@ function render() {
           <input type="number" inputmode="numeric" min="1" max="500" value="${row.count}" data-count aria-label="Trees in row ${row.no}">
           <button data-step="1" aria-label="One more tree">+</button></div></div>
       ${trees.length ? `<details><summary class="muted">Show ${trees.length} tree IDs (R${row.no}-T1 … R${row.no}-T${row.count})</summary>
-        <div class="trees" style="margin-top:8px">${trees.map(t => `<span>${t.id}</span>`).join('')}</div></details>` : ''}
+        <div class="trees" style="margin-top:8px">${trees.map(t => `<button type="button" class="tree" data-tree="${t.id}">${t.id}</button>`).join('')}</div></details>` : ''}
       <button class="btn bad small" data-del>Delete row ${row.no}</button>
     </section>`;
   }).join('');
@@ -334,8 +334,9 @@ $('addRow').onclick = addRow;
 $('rows').addEventListener('click', e => {
   const card = e.target.closest('[data-row]'); if (!card) return;
   const row = data.rows.find(r => r.id === card.dataset.row); if (!row) return;
-  const mark = e.target.closest('[data-mark]'), step = e.target.closest('[data-step]');
-  if (mark) {
+  const mark = e.target.closest('[data-mark]'), step = e.target.closest('[data-step]'), tb = e.target.closest('[data-tree]');
+  if (tb) showTree(treesOfRow(row).find(t => t.id === tb.dataset.tree));
+  else if (mark) {
     if (!('geolocation' in navigator) || !window.isSecureContext) return toast('GPS needs the https link of this app.');
     startMark(row, mark.dataset.mark);
   } else if (step) setCount(row, row.count + +step.dataset.step);
@@ -345,6 +346,19 @@ $('rows').addEventListener('change', e => {
   if (!e.target.matches('[data-count]')) return;
   const row = data.rows.find(r => r.id === e.target.closest('[data-row]').dataset.row); if (row) setCount(row, +e.target.value);
 });
+
+/* ---------- one tree's location: tap a tree ID ---------- */
+function showTree(t) {
+  if (!t) return;
+  const ll = `${t.lat.toFixed(6)}, ${t.lng.toFixed(6)}`;
+  const away = lastFix ? `<div class="muted">You are ${distM(lastFix, t).toFixed(0)} m from this tree.</div>` : '';
+  $('askText').innerHTML = `<div style="font-size:34px">${t.id}</div><div style="font-size:20px;user-select:all">${ll}</div>${away}
+    <a class="btn wide" href="https://maps.google.com/?q=${t.lat},${t.lng}" target="_blank" rel="noopener">Open in Maps</a>`;
+  $('askYes').textContent = 'Copy location'; $('askSheet').hidden = false;
+  $('askYes').onclick = () => { navigator.clipboard?.writeText(ll).then(() => toast('Location copied'), () => {}); $('askSheet').hidden = true; };
+  $('askNo').textContent = 'Close';
+  $('askNo').onclick = () => { $('askSheet').hidden = true; $('askNo').textContent = 'Cancel'; };
+}
 
 /* ---------- map: rows, trees and your position, drawn to scale ---------- */
 function drawMap() {
@@ -377,7 +391,8 @@ function drawMap() {
 /* ---------- backup: export / import JSON ---------- */
 $('exportBtn').onclick = async () => {
   const name = `palm-yield-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  const blob = new Blob([JSON.stringify({ app: 'palm-yield-tracker', exported: new Date().toISOString(), ...data }, null, 1)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'palm-yield-tracker', exported: new Date().toISOString(), ...data,
+    trees: data.rows.flatMap(treesOfRow).map(t => ({ id: t.id, lat: +t.lat.toFixed(7), lng: +t.lng.toFixed(7) })) }, null, 1)], { type: 'application/json' });
   const file = new File([blob], name, { type: 'application/json' });
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -397,7 +412,7 @@ $('importFile').onchange = async e => {
 
 /* ---------- small helpers ---------- */
 function ask(text, yes, fn) {
-  $('askText').textContent = text; $('askYes').textContent = yes; $('askSheet').hidden = false;
+  $('askText').textContent = text; $('askYes').textContent = yes; $('askNo').textContent = 'Cancel'; $('askSheet').hidden = false;
   $('askYes').onclick = () => { $('askSheet').hidden = true; fn(); };
   $('askNo').onclick = () => { $('askSheet').hidden = true; };
 }
