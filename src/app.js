@@ -1040,7 +1040,7 @@ async function start() {
   const got = { cfg: false, palms: false, tk: false };
   const slow = setTimeout(() => { if (!got.cfg || !got.palms) banner(t('slow')); }, 10000);
   const settle = () => { if (got.cfg && got.palms && got.tk) { clearTimeout(slow); if ($('banner').textContent === t('slow')) banner(S.canWrite === false ? t('readOnly') : ''); } };
-  db.doc('config/farm').onSnapshot(s => { S.config = s.exists ? s.data() : null; if (!s.metadata.fromCache) got.cfg = true; settle(); if (!S.config && got.cfg) banner(t('noConfig')); renderAll(); route(); }, () => { got.cfg = true; settle(); });
+  db.doc('config/farm').onSnapshot(s => { S.config = s.exists ? s.data() : null; if (!s.metadata.fromCache) got.cfg = true; settle(); if (!S.config && got.cfg) banner(t('noConfig')); else if (S.config && $('banner').textContent === t('noConfig')) banner(''); renderAll(); route(); }, () => { got.cfg = true; settle(); });
   db.collection('palms').onSnapshot(s => { const m = {}; s.docs.forEach(d => m[d.id] = d.data()); S.palms = m; if (!s.metadata.fromCache) got.palms = true; settle(); renderAll(); }, () => { got.palms = true; settle(); });
   db.collection('tickets').onSnapshot(s => { S.tickets = s.docs.map(d => ({ id: d.id, ...d.data(), tonnes: +d.data().tonnes || 0, bunches: +d.data().bunches || 0 })).filter(x => x.date); if (!s.metadata.fromCache) got.tk = true; settle(); renderAll(); }, () => { got.tk = true; settle(); });
 }
