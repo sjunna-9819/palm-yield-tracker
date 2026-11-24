@@ -209,7 +209,9 @@ function heightAt(x, z) {
   let d = 1e9; for (let i = 1; i < F.river.length; i++) d = Math.min(d, segDist(x, z, F.river[i - 1], F.river[i]));
   const hw = 9.5; return d < hw ? -2.6 * (1 - (d / hw) ** 2) : 0;
 }
-function inPoly(x, z, poly = F.poly) {
+const POLYS = F.polys || [F.poly], WETS = F.wets || [F.wet];   // several farms on one page: one outline each
+function inPoly(x, z, poly) {
+  if (!poly) return POLYS.some(q => inPoly(x, z, q));
   let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
     const [xi, zi] = poly[i], [xj, zj] = poly[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; }
   return c;
@@ -348,7 +350,7 @@ function fitGps(trees) {
   const err = pts.reduce((a, p) => a + near(p[0], p[1])[0], 0) / pts.length;
   return { pts: pts.map((p, i) => [+p[0].toFixed(2), +p[1].toFixed(2), ages[i] ?? med]), err, rot: best.rot * 180 / Math.PI };
 }
-function farmCentre() { let x = 0, z = 0; F.poly.forEach(p => { x += p[0]; z += p[1]; }); return [x / F.poly.length, z / F.poly.length]; }
+function farmCentre() { let x = 0, z = 0; POLYS.forEach(q => { let a = 0, b = 0; q.forEach(p => { a += p[0]; b += p[1]; }); x += a / q.length / POLYS.length; z += b / q.length / POLYS.length; }); return [x, z]; }   // middle of the farms' centres
 try {
   const raw = JSON.parse(localStorage.getItem(RAW_KEY) || 'null');
   if (Array.isArray(raw) && raw.length) {
@@ -416,7 +418,7 @@ circles.receiveShadow = true; scene.add(circles);
   { const n = []; for (let i = 0; i < pos.length / 3; i++) n.push(0, 1, 0); merged.setAttribute('normal', new THREE.Float32BufferAttribute(n, 3)); }
   const N = mobile ? 14000 : 42000, mat = new THREE.MeshStandardMaterial({ map: grassTex, alphaTest: 0.4, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.9 });
   const im = new THREE.InstancedMesh(merged, mat, N);
-  let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9; F.poly.forEach(([x, z]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); });
+  let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9; POLYS.flat().forEach(([x, z]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); });
   let k = 0, tries = 0;
   while (k < N && tries++ < N * 6) {
     const x = minX + rnd() * (maxX - minX), z = minZ + rnd() * (maxZ - minZ); if (!inPoly(x, z) || inYard(x, z)) continue;
@@ -490,8 +492,8 @@ F.blds.forEach(b => {
 
 /* ---------- boundary fence: granite posts every 3 m, four barbed-wire strands, on an earth bund ---------- */
 const fence = new THREE.Group();
-{ const pts = F.poly.concat([F.poly[0]]), posts = [];
-  const wet = i => F.wet && F.wet[i % F.poly.length] && F.wet[(i + 1) % F.poly.length];  // river side: water is the boundary
+POLYS.forEach((poly, pi) => { const pts = poly.concat([poly[0]]), posts = [], W8 = WETS[pi];
+  const wet = i => W8 && W8[i % poly.length] && W8[(i + 1) % poly.length];  // river side: water is the boundary
   let carry = 0;
   for (let i = 1; i < pts.length; i++) {
     const [x0, z0] = pts[i - 1], [x1, z1] = pts[i], L = Math.hypot(x1 - x0, z1 - z0);
@@ -531,7 +533,7 @@ const fence = new THREE.Group();
   }
   const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); bg.setIndex(idx); bg.computeVertexNormals();
   const bund = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: 0x8f7652, roughness: 1, side: THREE.DoubleSide }));
-  bund.receiveShadow = true; fence.add(bund); }
+  bund.receiveShadow = true; fence.add(bund); });
 scene.add(fence);
 
 /* ---------- sun by time of day (Nov, ~16.8°N: sun passes to the south) ---------- */
@@ -554,7 +556,7 @@ $('sun').oninput = e => setSun(+e.target.value); setSun(9.5);
 /* ---------- stats ---------- */
 $('sAcres').textContent = (F.area / 4046.86).toFixed(1);
 $('sPalms').textContent = nP.toLocaleString('en-IN');
-{ let mx = 0; F.poly.forEach(a => F.poly.forEach(b => mx = Math.max(mx, Math.hypot(a[0] - b[0], a[1] - b[1])))); $('sPer').textContent = Math.round(mx / 10) * 10 + ' m'; }
+{ let mx = 0; POLYS.forEach(q => q.forEach(a => q.forEach(b => mx = Math.max(mx, Math.hypot(a[0] - b[0], a[1] - b[1]))))); $('sPer').textContent = Math.round(mx / 10) * 10 + ' m'; }
 
 /* ---------- toggles ---------- */
 const tog = (id, fn) => $(id).onclick = () => { const on = $(id).getAttribute('aria-pressed') !== 'true'; $(id).setAttribute('aria-pressed', on); fn(on); };
@@ -583,20 +585,20 @@ if (gpsInfo) {
 $('more').onclick = () => { const o = $('card').classList.toggle('open'); $('more').setAttribute('aria-expanded', o); $('more').textContent = o ? 'Less' : 'More'; };
 
 /* ---------- camera views ---------- */
-const farmC = (() => { let x = 0, z = 0; F.poly.forEach(p => { x += p[0]; z += p[1]; }); return [x / F.poly.length, z / F.poly.length]; })();
+const farmC = farmCentre(), SPAN = F.span || 1;   // SPAN > 1 pulls the overview camera back for wide pages
 const shed = F.blds.find(b => b.kind === 'compound') || F.blds[0] || { x: 0, z: 0 };
 const VIEWS = {
-  over: { p: [farmC[0] - 130, 140, farmC[1] + 200], t: [farmC[0], 0, farmC[1] + 10] },
-  top: { p: [farmC[0], 420, farmC[1] + 1], t: [farmC[0], 0, farmC[1]] },
+  over: { p: [farmC[0] - 130 * SPAN, 140 * SPAN, farmC[1] + 200 * SPAN], t: [farmC[0], 0, farmC[1] + 10] },
+  top: { p: [farmC[0], 420 * SPAN, farmC[1] + 1], t: [farmC[0], 0, farmC[1]] },
   shed: { p: [shed.x - 30, 24, shed.z + 52], t: [shed.x, 2, shed.z] },
   walk: { p: [farmC[0] + 20, 1.7, farmC[1] + 24], t: [farmC[0] + 8, 3.6, farmC[1] + 6] }
 };
 { const y = P.find(p => p[2] < 0.15), m = P.find(p => p[2] > 0.95);
   if (y) VIEWS.young = { p: [y[0] + 7, 2.2, y[1] + 9], t: [y[0], 1.2, y[1]] };
   if (m) VIEWS.mature = { p: [m[0] + 9, 2.2, m[1] + 11], t: [m[0], 3.2, m[1]] };
-  let best = null;
+  let best = null; const wc = (() => { const q = POLYS[0]; let x = 0, z = 0; q.forEach(p => { x += p[0]; z += p[1]; }); return [x / q.length, z / q.length]; })();
   for (let gx = -60; gx <= 60; gx += 1.5) for (let gz = -60; gz <= 60; gz += 1.5) {
-    const x = farmC[0] + gx, z = farmC[1] + gz; if (!inPoly(x, z) || inYard(x, z)) continue;
+    const x = wc[0] + gx, z = wc[1] + gz; if (!inPoly(x, z) || inYard(x, z)) continue;
     let d = 1e9, dense = 0; for (const p of P) { const dd = Math.hypot(p[0] - x, p[1] - z); if (dd < d) d = dd; if (dd < 15 && p[2] > 0.6) dense++; }
     const score = Math.min(d, 4.5) * 10 + dense; if (!best || score > best.s) best = { s: score, x, z };
   }
@@ -604,7 +606,7 @@ const VIEWS = {
 let tween = null;
 function go(v, instant) {
   const V0 = VIEWS[v]; document.querySelectorAll('.views button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
-  if (mobile && v === 'over') V0.p = [farmC[0] - 190, 230, farmC[1] + 300];
+  if (mobile && v === 'over') V0.p = [farmC[0] - 190 * SPAN, 230 * SPAN, farmC[1] + 300 * SPAN];
   const to = { p: new THREE.Vector3(...V0.p), t: new THREE.Vector3(...V0.t) };
   if (instant || matchMedia('(prefers-reduced-motion: reduce)').matches) { camera.position.copy(to.p); controls.target.copy(to.t); tween = null; return; }
   tween = { from: { p: camera.position.clone(), t: controls.target.clone() }, to, t0: performance.now(), dur: 1600 };
@@ -617,6 +619,8 @@ function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h
 addEventListener('resize', resize); resize();
 go(({ '#v-top': 'top', '#v-shed': 'shed', '#v-walk': 'walk', '#v-young': 'young', '#v-mature': 'mature' })[location.hash] || 'over', true);
 const needle = $('needle'), dir = new THREE.Vector3();
+// floating name labels: one per farm (F.tags) or the page's single label over the middle
+const TAGS = F.tags ? F.tags.map(t => { const el = $('tag3d').cloneNode(true); el.removeAttribute('id'); el.textContent = t.name; $('tag3d').after(el); return [el, t.x, t.z]; }) : [[$('tag3d'), farmC[0], farmC[1]]];
 renderer.setAnimationLoop(now => {
   if (tween) {
     const k = Math.min(1, (now - tween.t0) / tween.dur), e = k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2;
@@ -624,8 +628,8 @@ renderer.setAnimationLoop(now => {
   }
   controls.update();
   waterNormal.offset.set(now * 0.00001, now * 0.000006);
-  { V.set(farmC[0], 14, farmC[1]).project(camera); const tg = $('tag3d'), show = V.z < 1 && Math.abs(V.x) < 1.1 && Math.abs(V.y) < 1.1 && camera.position.y > 12;
-    tg.hidden = !show; if (show) tg.style.transform = `translate(${(V.x + 1) / 2 * innerWidth}px, ${(1 - V.y) / 2 * innerHeight}px) translate(-50%, -100%)`; }
+  TAGS.forEach(([tg, x, z]) => { V.set(x, 14, z).project(camera); const show = V.z < 1 && Math.abs(V.x) < 1.1 && Math.abs(V.y) < 1.1 && camera.position.y > 12;
+    tg.hidden = !show; if (show) tg.style.transform = `translate(${(V.x + 1) / 2 * innerWidth}px, ${(1 - V.y) / 2 * innerHeight}px) translate(-50%, -100%)`; });
   camera.getWorldDirection(dir); needle.style.transform = `rotate(${Math.atan2(dir.x, -dir.z) * -180 / Math.PI}deg)`;
   renderer.render(scene, camera);
 });
