@@ -36,6 +36,7 @@ const T = {
   saveTicket:'Save ticket', tickets:'Mill tickets', setup:'Farm setup', farmNameL:'Farm name', blockId:'Block', acres:'Acres',
   palms:'Palms', planted:'Planted (year)', addBlock:'Add block', saveSetup:'Save setup',
   setupHint:'Palm numbers run 1 to the palm count in each block. Tag IDs look like B01-0001.',
+  gpsDenied:'Location is blocked for this app. iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using, and turn on Precise Location. Then close and reopen the app.', gpsInsecure:'GPS only works from the https link of the app.',
   tgOpen:'Tag palms with GPS', tgMark:'Mark location here', tgSkip:'Skip to next untagged', tgClear:'Remove saved spot', tgMapT:'Tagged palms', tgMapHint:'Green dots are tagged palms, the orange one is the palm selected above, blue is you. Tap a dot to select it.',
   tgListT:'All palms', tgLegTag:'tagged', tgLegNo:'not tagged', tgLegCur:'selected', tgCount:'{0} of {1} palms tagged', tgTagged:'Tagged ±{0} m', tgNot:'Not tagged yet',
   tgAway:'You are {0} m from this palm’s saved spot.', tgNearest:'Nearest tagged palm: {0}, {1} m away.', tgStand:'Stand at the trunk of {0}', tgSaved:'{0} tagged (±{1} m)', tgAveraged:'{0}: reading added, now ±{1} m',
@@ -115,6 +116,7 @@ const T = {
   saveTicket:'టికెట్ సేవ్ చేయి', tickets:'మిల్లు టికెట్లు', setup:'తోట వివరాలు', farmNameL:'తోట పేరు', blockId:'బ్లాక్', acres:'ఎకరాలు',
   palms:'చెట్లు', planted:'నాటిన సంవత్సరం', addBlock:'బ్లాక్ జోడించు', saveSetup:'సేవ్ చేయి',
   setupHint:'ప్రతి బ్లాక్‌లో చెట్లకు 1 నుండి నంబర్లు. ట్యాగ్ ID ఇలా ఉంటుంది: B01-0001.',
+  gpsDenied:'ఈ యాప్‌కు లొకేషన్ ఆపి ఉంది. iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using, Precise Location ఆన్ చేయండి. తర్వాత యాప్ మూసి మళ్ళీ తెరవండి.', gpsInsecure:'GPS యాప్ https లింక్ నుండే పనిచేస్తుంది.',
   tgOpen:'GPS తో చెట్లకు గుర్తు', tgMark:'ఇక్కడ స్థానం గుర్తు పెట్టు', tgSkip:'తర్వాత గుర్తు లేని చెట్టు', tgClear:'సేవ్ అయిన స్థానం తీసివేయి', tgMapT:'గుర్తు ఉన్న చెట్లు', tgMapHint:'ఆకుపచ్చ చుక్కలు గుర్తు ఉన్న చెట్లు, నారింజ రంగు పైన ఎంచిన చెట్టు, నీలం మీరు. ఎంచడానికి చుక్కను నొక్కండి.',
   tgListT:'అన్ని చెట్లు', tgLegTag:'గుర్తు ఉంది', tgLegNo:'గుర్తు లేదు', tgLegCur:'ఎంచినది', tgCount:'{1} లో {0} చెట్లకు గుర్తు', tgTagged:'గుర్తు ఉంది ±{0} మీ', tgNot:'ఇంకా గుర్తు లేదు',
   tgAway:'ఈ చెట్టు సేవ్ అయిన స్థానానికి మీరు {0} మీ దూరంలో ఉన్నారు.', tgNearest:'దగ్గరి గుర్తు ఉన్న చెట్టు: {0}, {1} మీ దూరం.', tgStand:'{0} కాండం దగ్గర నిలబడండి', tgSaved:'{0} గుర్తు సేవ్ అయింది (±{1} మీ)', tgAveraged:'{0}: రీడింగ్ జోడించాం, ఇప్పుడు ±{1} మీ',
@@ -952,7 +954,8 @@ function showTag(on) {
   const bs = blocks(); if (!bs.find(b => b.id === tgBlock)) { tgBlock = bs[0] ? bs[0].id : null; tgN = firstUntagged(1) || 1; }
   if (!tgStop) {
     $('tgGps').textContent = t('svWaiting'); $('tgDot').className = 'sv-dot';
-    watchLocation(f => { tgFix = f; $('tgDot').className = 'sv-dot ' + (f.acc <= 5 ? 'g' : f.acc <= 8 ? 'a' : 'r'); $('tgGps').textContent = `GPS ±${nf(f.acc, 1)} m`; renderTagLive(); })
+    watchLocation(f => { tgFix = f; $('tgDot').className = 'sv-dot ' + (f.acc <= 5 ? 'g' : f.acc <= 8 ? 'a' : 'r'); $('tgGps').textContent = `GPS ±${nf(f.acc, 1)} m`; renderTagLive(); },
+      e => { if (e === 'denied') { $('tgDot').className = 'sv-dot r'; $('tgGps').textContent = t('svGpsOff'); $('tgAway').textContent = t('gpsDenied'); } })
       .then(stop => { if (tab === 'tag') tgStop = stop; else stop(); }).catch(() => { $('tgGps').textContent = t('svGpsOff'); });
   }
   renderTag();
@@ -1045,7 +1048,7 @@ $('tgMap').addEventListener('click', e => {
 });
 $('tgClear').onclick = () => { const id = tgId(); confirmBox(t('tgClearAsk', id), async () => { try { await writePalm(id, body => { delete body.loc; }); } catch { toast(t('saveFailed')); } }); };
 $('tgMark').onclick = async () => {
-  if (!db) return;
+  if (!db) { toast(t('signedOut')); return; }
   const id = tgId(), b = tgB(); if (!id) return;
   tgPicked = true;
   const fix = await averageGps(t('tgStand', id), t); if (!fix) return;

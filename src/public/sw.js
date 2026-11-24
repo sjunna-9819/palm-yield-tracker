@@ -1,6 +1,6 @@
 // Offline support: network first, falling back to the last copy saved on the phone.
 // Every file the app loads (pages, scripts, images, 3D ground photos) is kept after first use.
-const CACHE = 'palm-farm-v1';
+const CACHE = 'palm-farm-v2';
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', 'index.html', 'farm1.html', 'farm2.html', 'manifest.webmanifest'])).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {

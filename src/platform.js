@@ -153,6 +153,12 @@ export async function scanTag() {
 
 /* ---------- GPS: watch ~8 s, keep the most accurate fix ---------- */
 export async function getLocation(onUpdate) {
+  if (webGeo()) {
+    let best = null;
+    const stop = await watchLocation(f => { if (!best || f.acc < best.acc) { best = f; onUpdate && onUpdate(best); } });
+    await new Promise(res => { const t0 = Date.now(); const iv = setInterval(() => { if ((best && best.acc <= 3) || Date.now() - t0 > 8000) { clearInterval(iv); res(); } }, 250); });
+    stop(); return best;
+  }
   try { const p = await Geolocation.checkPermissions(); if (p.location !== 'granted') await Geolocation.requestPermissions(); } catch {}
   let best = null, id = null;
   await new Promise(res => {
@@ -168,8 +174,18 @@ export async function getLocation(onUpdate) {
   return best;
 }
 
-/* ---------- GPS: continuous watch for "find palm near me" ---------- */
-export async function watchLocation(onFix) {
+/* ---------- GPS: continuous watch for "find palm near me" ----------
+   On the website (Safari / Chrome) the browser's own geolocation is used directly;
+   onError gets 'denied' | 'unavailable' | 'timeout' so screens can say what is wrong. */
+const webGeo = () => !Capacitor.isNativePlatform() && typeof navigator !== 'undefined' && navigator.geolocation;
+export async function watchLocation(onFix, onError) {
+  if (webGeo()) {
+    const id = navigator.geolocation.watchPosition(
+      pos => { const c = pos.coords; onFix({ lat: +c.latitude.toFixed(7), lng: +c.longitude.toFixed(7), acc: Math.round(c.accuracy * 10) / 10, t: Date.now() }); },
+      err => onError && onError(err.code === 1 ? 'denied' : err.code === 3 ? 'timeout' : 'unavailable'),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+    return () => navigator.geolocation.clearWatch(id);
+  }
   try { const p = await Geolocation.checkPermissions(); if (p.location !== 'granted') await Geolocation.requestPermissions(); } catch {}
   const id = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }, (pos, err) => {
     if (err || !pos) return;

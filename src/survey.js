@@ -319,21 +319,24 @@ export function averageGps(title, t) {
     $('svMarkCancel').textContent = t('svCancel');
     $('svMarkCancel').onclick = () => { $('svMark').hidden = true; end(null); };
     $('svMark').hidden = false; keepAwake(true);
-    try { stopWatch = await watchLocation(f => reads.push(f)); } catch { stopWatch = null; }
+    let gpsErr = null;
+    if (!('geolocation' in navigator)) gpsErr = 'unavailable';
+    else if (!window.isSecureContext) gpsErr = 'insecure';
+    try { if (!gpsErr) stopWatch = await watchLocation(f => reads.push(f), e => { gpsErr = e; }); } catch { gpsErr = 'unavailable'; }
     tick = setInterval(() => {
       const ms = Date.now() - t0, f = Math.min(1, ms / MARK_MAX_MS);
       $('svArc').style.strokeDashoffset = String(276.5 * (1 - f));
       $('svSecs').textContent = Math.ceil(Math.max(0, MARK_MAX_MS - ms) / 1000);
       $('svReads').textContent = t('svReads', reads.length);
       const best = reads.length ? Math.min(...reads.map(r => r.acc)) : null;
-      $('svMarkAcc').textContent = best == null ? t('svWaiting') : t('svBest', best.toFixed(1));
-      if ((ms >= MARK_MIN_MS && best != null && best <= 3 && reads.length >= 5) || ms >= MARK_MAX_MS) finish();
+      $('svMarkAcc').textContent = best == null ? t(gpsErr === 'denied' ? 'gpsDenied' : 'svWaiting') : t('svBest', best.toFixed(1));
+      if (gpsErr === 'denied' || gpsErr === 'insecure' || (ms >= MARK_MIN_MS && best != null && best <= 3 && reads.length >= 5) || ms >= MARK_MAX_MS) finish();
     }, 250);
     function finish() {
       clearInterval(tick); stopWatch && stopWatch(); stopWatch = null; keepAwake(false);
       const box = $('svMarkResult'); box.hidden = false;
       if (!reads.length) {
-        $('svMarkAcc').textContent = t('svNoReading');
+        $('svMarkAcc').textContent = t(gpsErr === 'denied' ? 'gpsDenied' : gpsErr === 'insecure' ? 'gpsInsecure' : 'svNoReading');
         box.innerHTML = `<button class="btn go" data-r="retry">${esc(t('svRetry'))}</button>`;
       } else {
         const best = Math.min(...reads.map(r => r.acc)), use = reads.filter(r => r.acc <= Math.max(best * 2, best + 3));
