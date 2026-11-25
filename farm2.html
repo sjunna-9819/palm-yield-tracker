@@ -593,6 +593,57 @@ POLYS.forEach((poly, pi) => { const pts = poly.concat([poly[0]]), posts = [], W8
   bund.receiveShadow = true; fence.add(bund); });
 scene.add(fence);
 
+/* ---------- living bamboo hedge just outside the fence (F.bamboo = height in m; river side left open) ---------- */
+const BAMB = F.bamboos || [F.bamboo || 0];
+if (BAMB.some(h => h > 0)) {
+  const bTop = 20, nodeTex = canvasTex(32, 512, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#5f7a2c'); gr.addColorStop(0.5, '#8fa548'); gr.addColorStop(1, '#55702a'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { const y = i * h / 40; g.fillStyle = 'rgba(60,55,25,.55)'; g.fillRect(0, y, w, 3); g.fillStyle = 'rgba(230,225,190,.35)'; g.fillRect(0, y + 3, w, 2); }
+    for (let i = 0; i < 300; i++) { g.fillStyle = `rgba(70,60,30,${Math.random() * 0.25})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 6); } });
+  const bLeaf = canvasTex(256, 256, (g, w, h) => { g.clearRect(0, 0, w, h);
+    for (let s = 0; s < 12; s++) { const x0 = 30 + Math.random() * 196, y0 = 20 + Math.random() * 120, dir = (Math.random() - 0.5) * 1.2;
+      g.strokeStyle = 'rgba(80,90,40,1)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x0, y0); const x1 = x0 + Math.sin(dir) * 70, y1 = y0 + 90; g.quadraticCurveTo(x0 + dir * 20, y0 + 40, x1, y1); g.stroke();
+      for (let k = 0; k < 13; k++) { const t = k / 9, px = x0 + (x1 - x0) * t, py = y0 + (y1 - y0) * t, a = (k % 2 ? 1 : -1) * (0.5 + Math.random() * 0.7) + dir, L = 38 + Math.random() * 22;
+        g.save(); g.translate(px, py); g.rotate(a); const v = 90 + Math.random() * 60; g.fillStyle = `rgb(${v * 0.55},${v},${v * 0.35})`;
+        g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(5, L * 0.45, 0, L); g.quadraticCurveTo(-5, L * 0.45, 0, 0); g.fill(); g.restore(); } } });
+  // one clump (~20 m): culms that splay and arch out, leaf sprays up the top two-thirds
+  const culms = [], cards = [], cuv = [], cidx = [], cnrm = []; let off = 0;
+  const NC = mobile ? 8 : 14;
+  for (let c = 0; c < NC; c++) {
+    const a = c / NC * 6.28 + rnd(), r0 = 0.1 + rnd() * 0.5, H = bTop * (0.75 + rnd() * 0.3), lean = 0.12 + rnd() * 0.18, rad = 0.05 + rnd() * 0.035;
+    const cg = new THREE.CylinderGeometry(rad * 0.45, rad, H, 5, 6, true).translate(0, H / 2, 0), p = cg.attributes.position;
+    const dx = Math.cos(a), dz = Math.sin(a), bend = t => H * (lean * t + 0.22 * t * t * t);
+    for (let i = 0; i < p.count; i++) { const t = p.getY(i) / H; p.setX(i, p.getX(i) + dx * (r0 + bend(t))); p.setZ(i, p.getZ(i) + dz * (r0 + bend(t))); }
+    cg.computeVertexNormals(); culms.push(cg);
+    for (let k = 0; k < (mobile ? 8 : 13); k++) {
+      const t = 0.2 + 0.8 * Math.pow(rnd(), 0.55), y = t * H, ox = dx * (r0 + bend(t)), oz = dz * (r0 + bend(t)), s = 2.4 + t * 2.4;
+      const q = new THREE.PlaneGeometry(s, s * 1.3); q.translate(0, -s * 0.35, 0); q.rotateX((rnd() - 0.5) * 0.9); q.rotateY(rnd() * 6.28); q.translate(ox + (rnd() - 0.5) * 0.8, y, oz + (rnd() - 0.5) * 0.8);
+      const arr = q.attributes.position.array; cards.push(...arr); cuv.push(...q.attributes.uv.array); cidx.push(...Array.from(q.index.array).map(v => v + off)); off += 4;
+      for (let j = 0; j < 4; j++) { V.set(arr[j * 3] - ox, 3, arr[j * 3 + 2] - oz).normalize(); cnrm.push(V.x, V.y, V.z); }
+    }
+  }
+  const culmGeo = mergeGeos(culms);
+  const leafGeo = new THREE.BufferGeometry(); leafGeo.setAttribute('position', new THREE.Float32BufferAttribute(cards, 3)); leafGeo.setAttribute('uv', new THREE.Float32BufferAttribute(cuv, 2)); leafGeo.setAttribute('normal', new THREE.Float32BufferAttribute(cnrm, 3)); leafGeo.setIndex(cidx);
+  // clump spots: every ~1.6 m along each dry edge, 2.2 m outside the line, not across the yard gate
+  const spots = [], gates = F.blds.filter(b => b.kind === 'compound').map(b => [b.x, b.z + b.d / 2]);
+  POLYS.forEach((poly, pi) => { if (!(BAMB[pi] > 0)) return; const W8 = WETS[pi], n = poly.length;
+    for (let i = 0; i < n; i++) {
+      if (W8 && W8[i] && W8[(i + 1) % n]) continue;
+      const [x0, z0] = poly[i], [x1, z1] = poly[(i + 1) % n], L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.5) continue;
+      let nx = (z1 - z0) / L, nz = -(x1 - x0) / L; const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+      if (inPoly(mx + nx * 3, mz + nz * 3, poly)) { nx = -nx; nz = -nz; }
+      for (let s = 0.8; s < L; s += 1.6) { const x = x0 + (x1 - x0) * s / L + nx * 2.2 + (rnd() - 0.5) * 0.6, z = z0 + (z1 - z0) * s / L + nz * 2.2 + (rnd() - 0.5) * 0.6;
+        if (gates.some(g => Math.hypot(g[0] - x, g[1] - z) < 7) || inPoly(x, z)) continue; spots.push([x, z, BAMB[pi] / bTop]); }
+    } });
+  const culmMat = addWind(new THREE.MeshStandardMaterial({ map: nodeTex, roughness: 0.55 }), 0.0016, 'tree');
+  const leafMat = addWind(new THREE.MeshStandardMaterial({ map: bLeaf, alphaTest: 0.4, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.8 }), 0.0016, 'tree');
+  const cIM = new THREE.InstancedMesh(culmGeo, culmMat, spots.length), lIM = new THREE.InstancedMesh(leafGeo, leafMat, spots.length);
+  lIM.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: bLeaf, alphaTest: 0.4 });
+  spots.forEach(([x, z, k], i) => { const s = k * (0.88 + rnd() * 0.2);
+    M.compose(V.set(x, heightAt(x, z), z), Q.setFromEuler(E.set(0, rnd() * 6.28, 0)), S.set(s, s, s)); cIM.setMatrixAt(i, M); lIM.setMatrixAt(i, M);
+    cIM.setColorAt(i, C.setHSL(0, 0, 0.85 + rnd() * 0.3)); lIM.setColorAt(i, C.setHSL(0.2 + rnd() * 0.05, 0.4 + rnd() * 0.2, 0.42 + rnd() * 0.14)); });
+  cIM.castShadow = lIM.castShadow = true; cIM.receiveShadow = lIM.receiveShadow = true; scene.add(cIM, lIM);
+}
+
 /* ---------- sun by time of day (Nov, ~16.8°N: sun passes to the south) ---------- */
 let envTimer = null;
 function setSun(h) {
@@ -647,7 +698,7 @@ const shed = F.blds.find(b => b.kind === 'compound') || F.blds[0] || { x: 0, z: 
 const VIEWS = {
   over: { p: [farmC[0] - 130 * SPAN, 140 * SPAN, farmC[1] + 200 * SPAN], t: [farmC[0], 0, farmC[1] + 10] },
   top: { p: [farmC[0], 420 * SPAN, farmC[1] + 1], t: [farmC[0], 0, farmC[1]] },
-  shed: { p: [shed.x - 30, 24, shed.z + 52], t: [shed.x, 2, shed.z] },
+  shed: BAMB[0] > 0 ? { p: [shed.x - 16, BAMB[0] + 26, shed.z + 30], t: [shed.x, 2, shed.z] } : { p: [shed.x - 30, 24, shed.z + 52], t: [shed.x, 2, shed.z] },   // over a tall hedge
   walk: { p: [farmC[0] + 20, 1.7, farmC[1] + 24], t: [farmC[0] + 8, 3.6, farmC[1] + 6] }
 };
 { const y = P.find(p => p[2] < 0.15), m = P.find(p => p[2] > 0.95);
