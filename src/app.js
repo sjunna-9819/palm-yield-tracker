@@ -482,7 +482,10 @@ function kpi(v, label, alert, jump, sw) {
 function pillsFor(s) { return STAGES.filter(x => +s[x.k] > 0).map(x => `<span class="pill"><i style="background:var(${x.css})"></i>${nf(+s[x.k])}</span>`).join(''); }
 let lastTags = '';
 function shareTags() {   // the 3D farm pages read the palms' GPS spots from here (same website, this phone)
-  const tags = []; for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) tags.push({ id, lat: p.loc.lat, lng: p.loc.lng });
+  const m = new Map(); const add = (id, p) => { if (p && p.loc && Number.isFinite(p.loc.lat) && Number.isFinite(p.loc.lng)) m.set(String(id), { id: String(id), lat: p.loc.lat, lng: p.loc.lng }); };
+  try { for (const [k, v] of Object.entries(localData.all())) if (k.startsWith('palms/')) add(k.slice(6), v); } catch {}
+  for (const [id, p] of Object.entries(S.palms)) add(id, p);   // the farm database wins when both have a palm
+  const tags = [...m.values()];
   tags.sort((a, b) => a.id < b.id ? -1 : 1); const js = JSON.stringify(tags);
   if (js !== lastTags) { lastTags = js; try { localStorage.setItem('pyt.trees.tags', js); } catch {} }
 }

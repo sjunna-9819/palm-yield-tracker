@@ -325,10 +325,20 @@ function geoPlace(t) {
     if (inPoly(x, z, POLYS[i] || POLYS[0])) return [x, z, i]; }
   return null;
 }
+/* every geo tag this phone knows: the list the app keeps for these pages, plus palms saved in
+   phone-only storage (the app's local database), merged by palm number */
+function phoneTags() {
+  const m = new Map();
+  try { for (const t of JSON.parse(localStorage.getItem('pyt.trees.tags') || '[]')) if (Number.isFinite(t.lat)) m.set(String(t.id), t); } catch (e) {}
+  try { const db = JSON.parse(localStorage.getItem('pyt:localdb') || '{}');
+    for (const k in db) { if (!k.startsWith('palms/')) continue; const l = db[k] && db[k].loc, id = k.slice(6);
+      if (l && Number.isFinite(l.lat) && Number.isFinite(l.lng) && !m.has(id)) m.set(id, { id, lat: l.lat, lng: l.lng }); } } catch (e) {}
+  return [...m.values()];
+}
 let gpsMarks = [];
 try {
   if (BLOCK === 'tags' && GEOS) {
-    const raw = JSON.parse(localStorage.getItem(RAW_KEY) || '[]'), placed = [];
+    const raw = phoneTags(), placed = [];
     for (const t of raw) { if (!Number.isFinite(t.lat) || !Number.isFinite(t.lng)) continue; const q = geoPlace(t); if (q) placed.push({ id: t.id, x: q[0], z: q[1] }); }
     // keep each tagged palm's age from the nearest photo palm, then drop photo palms it replaces
     const ref = F.palms.slice();
@@ -725,9 +735,10 @@ tog('tBunch', on => bunches.visible = on);
 tog('tNbr', on => nbr.visible = on);
 tog('tSpin', on => { controls.autoRotate = on; controls.autoRotateSpeed = 0.6; });
 $('gpsLoad').onclick = () => {
-  let tags = null; try { tags = JSON.parse(localStorage.getItem('pyt.trees.tags') || 'null'); } catch (e) {}
-  if (Array.isArray(tags) && tags.length) { location.search = '?block=tags'; return; }
-  $('gpsFile').click();
+  if (phoneTags().length) { location.search = '?block=tags'; return; }
+  const n = $('gpsNote'); n.hidden = false;
+  n.innerHTML = 'No geo-tagged palms found on this phone yet. Open the app, stand at a palm, open it and save its GPS spot; then come back and tap GPS palms. <a href="#" id="gpsFileLink">Load a survey file instead</a>';
+  $('gpsFileLink').onclick = e => { e.preventDefault(); $('gpsFile').click(); };
 };
 $('gpsFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
