@@ -332,8 +332,11 @@ table.setup input { width: 100%; min-width: 56px; box-sizing: border-box; height
 /* satellite map (Palms tab) */
 .sat-map { position: relative; isolation: isolate; z-index: 0; height: 62vh; min-height: 320px; border-radius: 12px; overflow: hidden; background: #1d2a20; margin-top: 8px; }
 .sat-pin span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #f4f1e8; color: #1b1b1b; border: 2px solid #1b1b1b; font: 700 12px/1 'Barlow Condensed', sans-serif; cursor: pointer; }
-.sat-pin.st-1 span { background: #3fa45b; color: #fff; border-color: #fff; }
-.sat-pin.st-2 span { background: #d8372a; color: #fff; border-color: #fff; }
+.sat-pin.c1 span { background: #3fa45b; color: #fff; border-color: #fff; }
+.sat-pin.c2 span { background: #d8372a; color: #fff; border-color: #fff; }
+.sat-pin.l1 span { background: #f2c27b; } .sat-pin.l2 span { background: #8fbf7a; } .sat-pin.l3 span { background: #2d6a3e; color: #fff; border-color: #fff; }
+.sat-pin.flag span { box-shadow: 0 0 0 3px #d8372a; }
+.sat-pin.dim { opacity: .3; }
 .sat-pin.hi span { transform: scale(1.35); box-shadow: 0 0 0 3px #f2c230; }
 .you-dot { width: 18px; height: 18px; border-radius: 50%; background: #2f80ed; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
 
@@ -400,3 +403,23 @@ table.setup input { width: 100%; min-width: 56px; box-sizing: border-box; height
 .th-att.bad { border-left-color: var(--bad); }
 .th-at { font-weight: 700; font-size: 16px; }
 .th-ids .chip { font-family: var(--f-num); font-size: 15px; min-height: 40px; }
+
+/* ---------- unified Map ---------- */
+.map-panel { display: flex; flex-direction: column; gap: 10px; }
+.map-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.map-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.map-lbl { font-size: 14px; color: var(--muted); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.seg button { min-height: 44px; padding: 0 14px; font-weight: 600; font-size: 15px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--leaf); color: var(--leaf-ink); }
+.map-panel .legend { margin: 0; }
+.legend i.lg { background: var(--h0); }
+.legend i.lg.c1 { background: var(--ok); } .legend i.lg.c2 { background: var(--bad); }
+.legend i.lg.l1 { background: var(--h1); } .legend i.lg.l2 { background: var(--h2); } .legend i.lg.l3 { background: var(--h3); }
+.legend i.lg.flag { background: transparent; box-shadow: inset 0 0 0 2px var(--bad); }
+.field-map g.c1 circle { fill: var(--ok); } .field-map g.c2 circle { fill: var(--bad); }
+.field-map g.c1 text, .field-map g.c2 text { fill: #fff; }
+.heat button.c1 { background: var(--ok); color: var(--leaf-ink); } .heat button.c2 { background: var(--bad); color: #fff; }
+.chip.on { background: var(--ink); color: var(--bg); }
+.map-panel .sat-map { margin-top: 0; }

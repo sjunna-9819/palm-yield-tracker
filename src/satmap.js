@@ -32,13 +32,13 @@ export function createSatMap(el, placesEl, opts = {}) {
   }
   function draw(pts) {
     ensure();
-    const key = JSON.stringify(pts.map(p => [p.id, p.lat, p.lng, p.st, p.hi]));
+    const key = JSON.stringify(pts.map(p => [p.id, p.lat, p.lng, p.cls, p.hi]));
     if (key === lastKey) { map.invalidateSize(); return; }
     lastKey = key; layer.clearLayers();
     for (const p of pts) {
       if (opts.rings !== false) L.circle([p.lat, p.lng], { radius: Math.max(p.acc || 0, 0.5), color: '#fff', weight: 1, opacity: .5, fillOpacity: .06, interactive: false }).addTo(layer);
       L.marker([p.lat, p.lng], {
-        icon: L.divIcon({ className: `sat-pin st-${p.st || 0}${p.hi ? ' hi' : ''}`, html: `<span>${p.n}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
+        icon: L.divIcon({ className: `sat-pin ${p.cls || 'c0'}${p.hi ? ' hi' : ''}`, html: `<span>${p.n}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
         keyboard: false, title: p.id, zIndexOffset: p.hi ? 1000 : 0,
       }).on('click', () => opts.open && opts.open(p.id)).addTo(layer);
     }

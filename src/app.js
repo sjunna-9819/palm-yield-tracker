@@ -27,7 +27,7 @@ const STAGES = [
 const T = {
  en: {
   guideBtn:'Guide', openPalm:'Open a palm', block:'Block', openBtn:'Open palm',
-  scanHint:'Or tap Scan tag and point the camera at the QR code on the palm.', scanBtn:'Scan tag', scanNone:'No palm tag found in that code.', gpsTitle:'Location', gpsBtn:'Save GPS here', gpsWorking:'Getting GPS… ±{0} m', gpsNone:'No GPS saved yet. Stand at the trunk and tap Save GPS here.', gpsSaved:'GPS saved ±{0} m ({1})', gpsFail:'Could not get GPS. Turn on location and try in the open.', gpsCount:'GPS saved for {0} of {1} palms', gpsExport:'Export GPS (CSV)', satTitle:'Satellite map', satCsv:'Show a GPS file (CSV) on the map', satHint:'{0} palms with GPS. Yellow dot = palm number, white ring = GPS accuracy. Tap a dot to open the palm.', satNone:'No palms have GPS yet. Tag palms on the Tag palms screen, or show a GPS file.', satPlace:'Location {0} ({1})', satLoaded:'{0} points from the file shown on the map (not saved).', satBad:'Could not read that file. Use the palm-gps.csv exported from this app.', gpsImprove:'Add another GPS reading here', gpsSavedN:'GPS saved ±{0} m from {2} readings ({1})', gpsFar:'This reading is {0} m from the saved spot, so it was not added. Check the tag number. Tap again to replace the saved spot.', gpsReplaced:'Saved spot replaced.', nearBtn:'Find palm by GPS', nearStop:'Stop GPS find', nearWait:'Getting GPS…', nearNone:'No palms have GPS yet. Stand at a palm and scan its tag once: its spot is saved when you save the count.', nearAcc:'GPS ±{0} m', nearClose:'Nearest palms. Walk within 2.5 m (8 ft) and the palm opens by itself:', nearWeak:'GPS is ±{0} m here, too weak to pick a palm by itself. Tap the palm below or scan its tag.', nearOpened:'{0} opened by GPS ({1} m away)', nearSaveFirst:'You are at {0}. Save {1} first, then {0} opens by itself.', pendingSync:'Saved on this phone. Will sync when there is signal.', syncErr:'A save was rejected by the server. Check your access.',
+  scanHint:'Or tap Scan tag and point the camera at the QR code on the palm.', scanBtn:'Scan tag', scanNone:'No palm tag found in that code.', gpsTitle:'Location', gpsBtn:'Save GPS here', gpsWorking:'Getting GPS… ±{0} m', gpsNone:'No GPS saved yet. Stand at the trunk and tap Save GPS here.', gpsSaved:'GPS saved ±{0} m ({1})', gpsFail:'Could not get GPS. Turn on location and try in the open.', gpsCount:'GPS saved for {0} of {1} palms', gpsExport:'Export GPS (CSV)', satTitle:'Satellite map', satCsv:'Show a GPS file (CSV) on the map', satHint:'{0} palms with GPS. Each dot is a palm number, coloured as in the key; the white ring is GPS accuracy. Tap a dot to open the palm.', satNone:'No palms have GPS yet. Tag palms on the Tag palms screen, or show a GPS file.', satPlace:'Location {0} ({1})', satLoaded:'{0} points from the file shown on the map (not saved).', satBad:'Could not read that file. Use the palm-gps.csv exported from this app.', gpsImprove:'Add another GPS reading here', gpsSavedN:'GPS saved ±{0} m from {2} readings ({1})', gpsFar:'This reading is {0} m from the saved spot, so it was not added. Check the tag number. Tap again to replace the saved spot.', gpsReplaced:'Saved spot replaced.', nearBtn:'Find palm by GPS', nearStop:'Stop GPS find', nearWait:'Getting GPS…', nearNone:'No palms have GPS yet. Stand at a palm and scan its tag once: its spot is saved when you save the count.', nearAcc:'GPS ±{0} m', nearClose:'Nearest palms. Walk within 2.5 m (8 ft) and the palm opens by itself:', nearWeak:'GPS is ±{0} m here, too weak to pick a palm by itself. Tap the palm below or scan its tag.', nearOpened:'{0} opened by GPS ({1} m away)', nearSaveFirst:'You are at {0}. Save {1} first, then {0} opens by itself.', pendingSync:'Saved on this phone. Will sync when there is signal.', syncErr:'A save was rejected by the server. Check your access.',
   countedToday:'Counted today', thisMonth:'This month', forecast:'Bunches coming (estimate)',
   fcNote:'Based on the latest count of each palm. Stage timings vary with season, water and palm age.',
   stagesByMonth:'Bunches on palms, by month', ovTitle:'Overripe bunches seen', ovHint:'These palms had overripe or rotten bunches. The harvest round is running late there.',
@@ -58,7 +58,7 @@ const T = {
   dataTitle:'Data and backup', dataExport:'Export all data (JSON)', dataImport:'Import data file', dataUpload:'Copy this phone\'s data to the farm database',
   dataLocal:'Phone-only mode: data is saved on this phone. Export a backup now and then. Add Firebase (SETUP.md) to share between phones.', dataShared:'Shared mode: every phone that joined the farm sees the same data.',
   dataAsk:'Load {0} palms, {1} mill tickets and the farm setup from this file? Records with the same ID are replaced.', dataLoaded:'Loaded {0} records.', dataBad:'That file is not a farm data backup.',
-  tdBig:'{0} of {1} palms counted', tdSub:'{0} round · {1}%', tdBlock:'{0}', tdPace:'{0} days left this month. Count about {1} palms a day to finish.', tdPaceDone:'Every palm is counted this month.', tdPaceLate:'Month is over for counting: {0} palms were not counted.', tdToday:'Today', tdTodayN:'{0} palms counted today', tdTodayNone:'Nobody has counted yet today.', tdBy:'{0}: {1}', tdMe:'This phone', tdLast:'Last save {0}', tdAttn:'Needs attention', tdAttnNone:'Nothing needs attention right now.', tdFlagged:'{0} ({1})', tdOver:'Overripe bunches this month ({0} palms)', tdOpen:'Open', walkCount:'Count this palm', walkType:'Type number', walkGpsWait:'Getting GPS…', walkGpsWeak:'GPS weak ±{0} m. Step into the open.', walkGps:'GPS ±{0} m', walkAway:'{0} m away', walkHere:'You are at this palm', walkTodo:'Not counted', walkDone:'Counted', walkFlag:'Problem', walkFind:'Walk towards a palm', syLocal:'This phone only', syOk:'Synced', syWait:'{0} waiting for signal', sySend:'Sending {0}…', syOffline:'Offline', syErr:'Not saved to farm', syInfoOk:'Everything on this phone is saved to the farm database.', syInfoWait:'{0} saves are on this phone and will go to the farm database when there is signal. Keep the app open for a moment when you have signal.', syInfoOffline:'No signal now. Saves stay on this phone and go to the farm database later.', syInfoErr:'The farm database refused a save ({0}). Open that palm and save it again. If it keeps happening, tell the farm owner.', syInfoLocal:'This app is not connected to a farm database. Data stays on this phone only.', dbCount:'Farm database now holds {0} palms, {1} with GPS.', dbCountWait:'Checking the farm database…', dbCountFail:'Could not reach the farm database. Check signal.', ok:'OK', upFailed:'Copy failed ({0}). Nothing was copied. Check signal and try again.', dataUpAsk:'Copy {0} records from this phone to the farm database?', dataUploaded:'Copied {0} records.', yes:'Yes',
+  tdBig:'{0} of {1} palms counted', tdSub:'{0} round · {1}%', tdBlock:'{0}', tdPace:'{0} days left this month. Count about {1} palms a day to finish.', tdPaceDone:'Every palm is counted this month.', tdPaceLate:'Month is over for counting: {0} palms were not counted.', tdToday:'Today', tdTodayN:'{0} palms counted today', tdTodayNone:'Nobody has counted yet today.', tdBy:'{0}: {1}', tdMe:'This phone', tdLast:'Last save {0}', tdAttn:'Needs attention', tdAttnNone:'Nothing needs attention right now.', tdFlagged:'{0} ({1})', tdOver:'Overripe bunches this month ({0} palms)', tdOpen:'Open', mapTitle:'Map', mapColour:'Colour by', mvSat:'Satellite', mvRows:'Rows', mmStatus:'Status', mmRipe:'Ripeness', mmProb:'Problems', lgNot:'not counted', lgDone:'counted', lgProb:'problem', lgOk:'no problem', mapOnly:'Only: {0}', mapHintGrid:'Each square is one palm, by number. Tap a palm to open it. Add the field layout in Setup to draw real rows.', walkCount:'Count this palm', walkType:'Type number', walkGpsWait:'Getting GPS…', walkGpsWeak:'GPS weak ±{0} m. Step into the open.', walkGps:'GPS ±{0} m', walkAway:'{0} m away', walkHere:'You are at this palm', walkTodo:'Not counted', walkDone:'Counted', walkFlag:'Problem', walkFind:'Walk towards a palm', syLocal:'This phone only', syOk:'Synced', syWait:'{0} waiting for signal', sySend:'Sending {0}…', syOffline:'Offline', syErr:'Not saved to farm', syInfoOk:'Everything on this phone is saved to the farm database.', syInfoWait:'{0} saves are on this phone and will go to the farm database when there is signal. Keep the app open for a moment when you have signal.', syInfoOffline:'No signal now. Saves stay on this phone and go to the farm database later.', syInfoErr:'The farm database refused a save ({0}). Open that palm and save it again. If it keeps happening, tell the farm owner.', syInfoLocal:'This app is not connected to a farm database. Data stays on this phone only.', dbCount:'Farm database now holds {0} palms, {1} with GPS.', dbCountWait:'Checking the farm database…', dbCountFail:'Could not reach the farm database. Check signal.', ok:'OK', upFailed:'Copy failed ({0}). Nothing was copied. Check signal and try again.', dataUpAsk:'Copy {0} records from this phone to the farm database?', dataUploaded:'Copied {0} records.', yes:'Yes',
   layoutTitle:'Field layout', layoutHint:'Enter how many palms are in each row, in walking order. Palm numbers then run row by row: row 1 first, then row 2, and so on. Or load the backup file from the Palm Yield Tracker to use the real GPS positions. Tap Save setup after.',
   layRows:'Palms in each row, separated by commas', layDiamond:'Diamond planting (every other row shifted half a palm)', layImport:'Load from Palm Yield Tracker backup', layClear:'Clear layout',
   layNone:'No field layout for this block yet: palms are shown in number order.', layInfo:'{0} rows, {1} palms{2}.', layGps:', GPS positions', layMismatch:'Rows add up to {0} palms but the block has {1}. Saving sets the block to {0}.',
@@ -107,7 +107,7 @@ const T = {
  },
  te: {
   guideBtn:'గైడ్', openPalm:'చెట్టును తెరవండి', block:'బ్లాక్', openBtn:'చెట్టు తెరువు',
-  scanHint:'లేదా "ట్యాగ్ స్కాన్" నొక్కి చెట్టు మీది QR కోడ్ వైపు కెమెరా చూపించండి.', scanBtn:'ట్యాగ్ స్కాన్', scanNone:'ఆ కోడ్‌లో చెట్టు ట్యాగ్ లేదు.', gpsTitle:'స్థానం', gpsBtn:'ఇక్కడ GPS సేవ్ చేయి', gpsWorking:'GPS తీసుకుంటోంది… ±{0} మీ', gpsNone:'ఇంకా GPS సేవ్ కాలేదు. కాండం దగ్గర నిలబడి "ఇక్కడ GPS సేవ్ చేయి" నొక్కండి.', gpsSaved:'GPS సేవ్ అయింది ±{0} మీ ({1})', gpsFail:'GPS రాలేదు. లొకేషన్ ఆన్ చేసి ఖాళీ ప్రదేశంలో ప్రయత్నించండి.', gpsCount:'{1} లో {0} చెట్లకు GPS ఉంది', gpsExport:'GPS ఎగుమతి (CSV)', satTitle:'ఉపగ్రహ పటం', satCsv:'GPS ఫైల్ (CSV) పటంలో చూపించు', satHint:'GPS ఉన్న చెట్లు {0}. పసుపు చుక్క = చెట్టు నంబర్, తెల్ల వలయం = GPS ఖచ్చితత్వం. చుక్కను తట్టి చెట్టు తెరవండి.', satNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. ట్యాగ్ స్క్రీన్‌లో చెట్లకు GPS పెట్టండి, లేదా GPS ఫైల్ చూపించండి.', satPlace:'స్థలం {0} ({1})', satLoaded:'ఫైల్ నుండి {0} పాయింట్లు పటంలో చూపించాం (సేవ్ కాలేదు).', satBad:'ఆ ఫైల్ చదవలేకపోయాం. ఈ యాప్ నుండి ఎగుమతి చేసిన palm-gps.csv వాడండి.', gpsImprove:'ఇక్కడ మరో GPS రీడింగ్ జోడించు', gpsSavedN:'GPS సేవ్ అయింది ±{0} మీ, {2} రీడింగ్‌లు ({1})', gpsFar:'ఈ రీడింగ్ సేవ్ అయిన స్థానానికి {0} మీ దూరంలో ఉంది, జోడించలేదు. ట్యాగ్ నంబర్ చూడండి. స్థానం మార్చాలంటే మళ్ళీ నొక్కండి.', gpsReplaced:'సేవ్ అయిన స్థానం మార్చబడింది.', nearBtn:'GPS తో చెట్టు కనుగొను', nearStop:'GPS వెతుకుట ఆపు', nearWait:'GPS తీసుకుంటోంది…', nearNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. చెట్టు దగ్గర నిలబడి దాని ట్యాగ్ ఒకసారి స్కాన్ చేయండి: లెక్క సేవ్ చేసినప్పుడు స్థానం సేవ్ అవుతుంది.', nearAcc:'GPS ±{0} మీ', nearClose:'దగ్గరి చెట్లు. 2.5 మీ (8 అడుగులు) లోపలికి వెళ్తే చెట్టు తానే తెరుచుకుంటుంది:', nearWeak:'ఇక్కడ GPS ±{0} మీ, చెట్టును తానే ఎంచడానికి బలహీనంగా ఉంది. కింద చెట్టును నొక్కండి లేదా ట్యాగ్ స్కాన్ చేయండి.', nearOpened:'{0} GPS తో తెరుచుకుంది ({1} మీ దూరం)', nearSaveFirst:'మీరు {0} దగ్గర ఉన్నారు. ముందు {1} సేవ్ చేయండి, తర్వాత {0} తానే తెరుచుకుంటుంది.', pendingSync:'ఈ ఫోన్‌లో సేవ్ అయింది. సిగ్నల్ రాగానే సింక్ అవుతుంది.', syncErr:'ఒక సేవ్‌ను సర్వర్ తిరస్కరించింది. మీ యాక్సెస్ చూడండి.',
+  scanHint:'లేదా "ట్యాగ్ స్కాన్" నొక్కి చెట్టు మీది QR కోడ్ వైపు కెమెరా చూపించండి.', scanBtn:'ట్యాగ్ స్కాన్', scanNone:'ఆ కోడ్‌లో చెట్టు ట్యాగ్ లేదు.', gpsTitle:'స్థానం', gpsBtn:'ఇక్కడ GPS సేవ్ చేయి', gpsWorking:'GPS తీసుకుంటోంది… ±{0} మీ', gpsNone:'ఇంకా GPS సేవ్ కాలేదు. కాండం దగ్గర నిలబడి "ఇక్కడ GPS సేవ్ చేయి" నొక్కండి.', gpsSaved:'GPS సేవ్ అయింది ±{0} మీ ({1})', gpsFail:'GPS రాలేదు. లొకేషన్ ఆన్ చేసి ఖాళీ ప్రదేశంలో ప్రయత్నించండి.', gpsCount:'{1} లో {0} చెట్లకు GPS ఉంది', gpsExport:'GPS ఎగుమతి (CSV)', satTitle:'ఉపగ్రహ పటం', satCsv:'GPS ఫైల్ (CSV) పటంలో చూపించు', satHint:'GPS ఉన్న చెట్లు {0}. ప్రతి చుక్క ఒక చెట్టు నంబర్, రంగు పైన ఉన్న గుర్తు ప్రకారం; తెల్ల వలయం = GPS ఖచ్చితత్వం. చుక్కను తట్టి చెట్టు తెరవండి.', satNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. ట్యాగ్ స్క్రీన్‌లో చెట్లకు GPS పెట్టండి, లేదా GPS ఫైల్ చూపించండి.', satPlace:'స్థలం {0} ({1})', satLoaded:'ఫైల్ నుండి {0} పాయింట్లు పటంలో చూపించాం (సేవ్ కాలేదు).', satBad:'ఆ ఫైల్ చదవలేకపోయాం. ఈ యాప్ నుండి ఎగుమతి చేసిన palm-gps.csv వాడండి.', gpsImprove:'ఇక్కడ మరో GPS రీడింగ్ జోడించు', gpsSavedN:'GPS సేవ్ అయింది ±{0} మీ, {2} రీడింగ్‌లు ({1})', gpsFar:'ఈ రీడింగ్ సేవ్ అయిన స్థానానికి {0} మీ దూరంలో ఉంది, జోడించలేదు. ట్యాగ్ నంబర్ చూడండి. స్థానం మార్చాలంటే మళ్ళీ నొక్కండి.', gpsReplaced:'సేవ్ అయిన స్థానం మార్చబడింది.', nearBtn:'GPS తో చెట్టు కనుగొను', nearStop:'GPS వెతుకుట ఆపు', nearWait:'GPS తీసుకుంటోంది…', nearNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. చెట్టు దగ్గర నిలబడి దాని ట్యాగ్ ఒకసారి స్కాన్ చేయండి: లెక్క సేవ్ చేసినప్పుడు స్థానం సేవ్ అవుతుంది.', nearAcc:'GPS ±{0} మీ', nearClose:'దగ్గరి చెట్లు. 2.5 మీ (8 అడుగులు) లోపలికి వెళ్తే చెట్టు తానే తెరుచుకుంటుంది:', nearWeak:'ఇక్కడ GPS ±{0} మీ, చెట్టును తానే ఎంచడానికి బలహీనంగా ఉంది. కింద చెట్టును నొక్కండి లేదా ట్యాగ్ స్కాన్ చేయండి.', nearOpened:'{0} GPS తో తెరుచుకుంది ({1} మీ దూరం)', nearSaveFirst:'మీరు {0} దగ్గర ఉన్నారు. ముందు {1} సేవ్ చేయండి, తర్వాత {0} తానే తెరుచుకుంటుంది.', pendingSync:'ఈ ఫోన్‌లో సేవ్ అయింది. సిగ్నల్ రాగానే సింక్ అవుతుంది.', syncErr:'ఒక సేవ్‌ను సర్వర్ తిరస్కరించింది. మీ యాక్సెస్ చూడండి.',
   countedToday:'ఈ రోజు లెక్కించినవి', thisMonth:'ఈ నెల', forecast:'రాబోయే గెలలు (అంచనా)',
   fcNote:'ప్రతి చెట్టు చివరి లెక్క ఆధారంగా. దశల సమయం కాలం, నీరు, చెట్టు వయసును బట్టి మారుతుంది.',
   stagesByMonth:'చెట్ల మీద గెలలు, నెలవారీగా', ovTitle:'అతిగా పండిన గెలలు కనిపించినవి', ovHint:'ఈ చెట్లకు అతిగా పండిన లేదా కుళ్ళిన గెలలు ఉన్నాయి. అక్కడ కోత ఆలస్యమవుతోంది.',
@@ -138,7 +138,7 @@ const T = {
   dataTitle:'డేటా మరియు బ్యాకప్', dataExport:'మొత్తం డేటా ఎగుమతి (JSON)', dataImport:'డేటా ఫైల్ దిగుమతి', dataUpload:'ఈ ఫోన్ డేటాను తోట డేటాబేస్‌కు కాపీ చేయి',
   dataLocal:'ఫోన్ మాత్రమే: డేటా ఈ ఫోన్‌లోనే ఉంటుంది. అప్పుడప్పుడు బ్యాకప్ ఎగుమతి చేయండి. ఫోన్ల మధ్య పంచుకోవడానికి Firebase జోడించండి (SETUP.md).', dataShared:'పంచుకునే విధానం: తోటలో చేరిన ప్రతి ఫోన్‌కు ఒకే డేటా కనిపిస్తుంది.',
   dataAsk:'ఈ ఫైల్ నుండి {0} చెట్లు, {1} మిల్ టికెట్లు, తోట సెటప్ లోడ్ చేయాలా? ఒకే ID ఉన్నవి మారతాయి.', dataLoaded:'{0} రికార్డులు లోడ్ అయ్యాయి.', dataBad:'ఇది తోట డేటా బ్యాకప్ కాదు.',
-  tdBig:'{1} లో {0} చెట్లు లెక్కించారు', tdSub:'{0} రౌండ్ · {1}%', tdBlock:'{0}', tdPace:'ఈ నెలలో {0} రోజులు మిగిలాయి. పూర్తి చేయడానికి రోజుకు సుమారు {1} చెట్లు లెక్కించండి.', tdPaceDone:'ఈ నెల అన్ని చెట్లూ లెక్కించారు.', tdPaceLate:'ఈ నెల లెక్కింపు ముగిసింది: {0} చెట్లు లెక్కించలేదు.', tdToday:'ఈ రోజు', tdTodayN:'ఈ రోజు {0} చెట్లు లెక్కించారు', tdTodayNone:'ఈ రోజు ఇంకా ఎవరూ లెక్కించలేదు.', tdBy:'{0}: {1}', tdMe:'ఈ ఫోన్', tdLast:'చివరి సేవ్ {0}', tdAttn:'గమనించాల్సినవి', tdAttnNone:'ఇప్పుడు గమనించాల్సినది ఏదీ లేదు.', tdFlagged:'{0} ({1})', tdOver:'ఈ నెల ముదిరిన గెలలు ({0} చెట్లు)', tdOpen:'తెరువు', walkCount:'ఈ చెట్టు లెక్కించు', walkType:'నంబర్ టైప్ చేయి', walkGpsWait:'GPS తీసుకుంటోంది…', walkGpsWeak:'GPS బలహీనం ±{0} మీ. ఖాళీ ప్రదేశంలోకి రండి.', walkGps:'GPS ±{0} మీ', walkAway:'{0} మీ దూరం', walkHere:'మీరు ఈ చెట్టు దగ్గర ఉన్నారు', walkTodo:'లెక్కించలేదు', walkDone:'లెక్కించారు', walkFlag:'సమస్య', walkFind:'ఒక చెట్టు వైపు నడవండి', syLocal:'ఈ ఫోన్ మాత్రమే', syOk:'సింక్ అయింది', syWait:'{0} సిగ్నల్ కోసం వేచి ఉన్నాయి', sySend:'{0} పంపుతోంది…', syOffline:'సిగ్నల్ లేదు', syErr:'తోటకు సేవ్ కాలేదు', syInfoOk:'ఈ ఫోన్‌లోని అన్నీ తోట డేటాబేస్‌లో సేవ్ అయ్యాయి.', syInfoWait:'{0} సేవ్‌లు ఈ ఫోన్‌లో ఉన్నాయి, సిగ్నల్ రాగానే తోట డేటాబేస్‌కు వెళ్తాయి. సిగ్నల్ ఉన్నప్పుడు యాప్ కాసేపు తెరిచి ఉంచండి.', syInfoOffline:'ఇప్పుడు సిగ్నల్ లేదు. సేవ్‌లు ఈ ఫోన్‌లో ఉండి తర్వాత తోట డేటాబేస్‌కు వెళ్తాయి.', syInfoErr:'తోట డేటాబేస్ ఒక సేవ్‌ను తిరస్కరించింది ({0}). ఆ చెట్టును తెరిచి మళ్ళీ సేవ్ చేయండి. మళ్ళీ జరిగితే తోట యజమానికి చెప్పండి.', syInfoLocal:'ఈ యాప్ తోట డేటాబేస్‌కు కనెక్ట్ కాలేదు. డేటా ఈ ఫోన్‌లోనే ఉంటుంది.', dbCount:'తోట డేటాబేస్‌లో ఇప్పుడు {0} చెట్లు, {1} కి GPS ఉంది.', dbCountWait:'తోట డేటాబేస్ చూస్తోంది…', dbCountFail:'తోట డేటాబేస్ అందలేదు. సిగ్నల్ చూడండి.', ok:'సరే', upFailed:'కాపీ విఫలమైంది ({0}). ఏదీ కాపీ కాలేదు. సిగ్నల్ చూసి మళ్ళీ ప్రయత్నించండి.', dataUpAsk:'ఈ ఫోన్ నుండి {0} రికార్డులు తోట డేటాబేస్‌కు కాపీ చేయాలా?', dataUploaded:'{0} రికార్డులు కాపీ అయ్యాయి.', yes:'అవును',
+  tdBig:'{1} లో {0} చెట్లు లెక్కించారు', tdSub:'{0} రౌండ్ · {1}%', tdBlock:'{0}', tdPace:'ఈ నెలలో {0} రోజులు మిగిలాయి. పూర్తి చేయడానికి రోజుకు సుమారు {1} చెట్లు లెక్కించండి.', tdPaceDone:'ఈ నెల అన్ని చెట్లూ లెక్కించారు.', tdPaceLate:'ఈ నెల లెక్కింపు ముగిసింది: {0} చెట్లు లెక్కించలేదు.', tdToday:'ఈ రోజు', tdTodayN:'ఈ రోజు {0} చెట్లు లెక్కించారు', tdTodayNone:'ఈ రోజు ఇంకా ఎవరూ లెక్కించలేదు.', tdBy:'{0}: {1}', tdMe:'ఈ ఫోన్', tdLast:'చివరి సేవ్ {0}', tdAttn:'గమనించాల్సినవి', tdAttnNone:'ఇప్పుడు గమనించాల్సినది ఏదీ లేదు.', tdFlagged:'{0} ({1})', tdOver:'ఈ నెల ముదిరిన గెలలు ({0} చెట్లు)', tdOpen:'తెరువు', mapTitle:'మ్యాప్', mapColour:'రంగు', mvSat:'ఉపగ్రహ', mvRows:'వరుసలు', mmStatus:'స్థితి', mmRipe:'పక్వత', mmProb:'సమస్యలు', lgNot:'లెక్కించలేదు', lgDone:'లెక్కించారు', lgProb:'సమస్య', lgOk:'సమస్య లేదు', mapOnly:'మాత్రమే: {0}', mapHintGrid:'ప్రతి చతురస్రం ఒక చెట్టు, నంబర్ ప్రకారం. చెట్టును తట్టి తెరవండి. అసలు వరుసలు చూపడానికి సెటప్‌లో పొలం వరుసలు జోడించండి.', walkCount:'ఈ చెట్టు లెక్కించు', walkType:'నంబర్ టైప్ చేయి', walkGpsWait:'GPS తీసుకుంటోంది…', walkGpsWeak:'GPS బలహీనం ±{0} మీ. ఖాళీ ప్రదేశంలోకి రండి.', walkGps:'GPS ±{0} మీ', walkAway:'{0} మీ దూరం', walkHere:'మీరు ఈ చెట్టు దగ్గర ఉన్నారు', walkTodo:'లెక్కించలేదు', walkDone:'లెక్కించారు', walkFlag:'సమస్య', walkFind:'ఒక చెట్టు వైపు నడవండి', syLocal:'ఈ ఫోన్ మాత్రమే', syOk:'సింక్ అయింది', syWait:'{0} సిగ్నల్ కోసం వేచి ఉన్నాయి', sySend:'{0} పంపుతోంది…', syOffline:'సిగ్నల్ లేదు', syErr:'తోటకు సేవ్ కాలేదు', syInfoOk:'ఈ ఫోన్‌లోని అన్నీ తోట డేటాబేస్‌లో సేవ్ అయ్యాయి.', syInfoWait:'{0} సేవ్‌లు ఈ ఫోన్‌లో ఉన్నాయి, సిగ్నల్ రాగానే తోట డేటాబేస్‌కు వెళ్తాయి. సిగ్నల్ ఉన్నప్పుడు యాప్ కాసేపు తెరిచి ఉంచండి.', syInfoOffline:'ఇప్పుడు సిగ్నల్ లేదు. సేవ్‌లు ఈ ఫోన్‌లో ఉండి తర్వాత తోట డేటాబేస్‌కు వెళ్తాయి.', syInfoErr:'తోట డేటాబేస్ ఒక సేవ్‌ను తిరస్కరించింది ({0}). ఆ చెట్టును తెరిచి మళ్ళీ సేవ్ చేయండి. మళ్ళీ జరిగితే తోట యజమానికి చెప్పండి.', syInfoLocal:'ఈ యాప్ తోట డేటాబేస్‌కు కనెక్ట్ కాలేదు. డేటా ఈ ఫోన్‌లోనే ఉంటుంది.', dbCount:'తోట డేటాబేస్‌లో ఇప్పుడు {0} చెట్లు, {1} కి GPS ఉంది.', dbCountWait:'తోట డేటాబేస్ చూస్తోంది…', dbCountFail:'తోట డేటాబేస్ అందలేదు. సిగ్నల్ చూడండి.', ok:'సరే', upFailed:'కాపీ విఫలమైంది ({0}). ఏదీ కాపీ కాలేదు. సిగ్నల్ చూసి మళ్ళీ ప్రయత్నించండి.', dataUpAsk:'ఈ ఫోన్ నుండి {0} రికార్డులు తోట డేటాబేస్‌కు కాపీ చేయాలా?', dataUploaded:'{0} రికార్డులు కాపీ అయ్యాయి.', yes:'అవును',
   layoutTitle:'పొలం వరుసలు', layoutHint:'ప్రతి వరుసలో ఎన్ని చెట్లు ఉన్నాయో నడిచే క్రమంలో రాయండి. చెట్ల నంబర్లు వరుస 1 నుండి మొదలై వరుసగా వస్తాయి. లేదా Palm Yield Tracker బ్యాకప్ ఫైల్ లోడ్ చేస్తే అసలు GPS స్థానాలు వస్తాయి. తర్వాత సెటప్ సేవ్ చేయండి.',
   layRows:'ప్రతి వరుసలో చెట్లు, కామాలతో', layDiamond:'డైమండ్ పద్ధతి (ప్రతి రెండో వరుస సగం చెట్టు జరిగి ఉంటుంది)', layImport:'Palm Yield Tracker బ్యాకప్ లోడ్ చేయండి', layClear:'వరుసలు తీసివేయండి',
   layNone:'ఈ బ్లాక్‌కు ఇంకా వరుసలు లేవు: చెట్లు నంబర్ క్రమంలో చూపిస్తున్నాం.', layInfo:'{0} వరుసలు, {1} చెట్లు{2}.', layGps:', GPS స్థానాలు', layMismatch:'వరుసల మొత్తం {0} చెట్లు, కానీ బ్లాక్‌లో {1}. సేవ్ చేస్తే బ్లాక్ {0} అవుతుంది.',
@@ -417,7 +417,7 @@ function setTab(name, push = true) {
   $('helpBtn').setAttribute('aria-pressed', name === 'guide');
   if (push && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo(0, 0);
-  if (name === 'palms') renderSat();
+  if (name === 'palms') renderMap(metrics());
   if (name === 'setup') renderDbCount();
   if (name === 'count') { renderWalk(metrics()); walkMap.resize(); }
 }
@@ -506,7 +506,7 @@ function renderAll() {
   const nc = []; for (const b of blocks()) for (let i = 1; i <= (+b.palms || 0); i++) { const id = palmId(b.id, i); if (!M.latest[id] || M.latest[id].m !== M.mo) nc.push(id); }
   $('ncList').innerHTML = nc.length ? `<li><span class="grow">${esc(t('roundOf', nf(nc.length), nf(M.totalPalms)))}</span></li>` + nc.slice(0, 40).map(id => `<li><button class="id" data-open="${id}">${id}</button></li>`).join('') : `<li class="empty">${esc(t('allCounted'))}</li>`;
   { let g = 0; for (const p of Object.values(S.palms)) if (p && p.loc) g++; $('gpsCount').textContent = t('gpsCount', nf(g), nf(M.totalPalms)); }
-  renderChart(M); renderMap(M); renderSat(); renderTickets(); renderSetup();
+  renderChart(M); if (tab === 'palms') renderMap(M); renderTickets(); renderSetup();
   if (!$('sheet').hidden && curPalm) renderPalm();
 }
 function renderChart(M) {
@@ -549,31 +549,52 @@ function palmXY(b, n) {
   const [r, k] = rt, shift = b.diamond && r % 2 === 0 ? SPACING / 2 : 0;
   return [(k - 1) * SPACING + shift, (r - 1) * (b.diamond ? ROWGAP_DIAMOND : SPACING)];
 }
-let mapBlock = null, mapFilter = 'all';
+let mapBlock = null, mapFilter = 'all', mapMode = 'status', mapView = null;
+try { mapMode = localStorage.getItem('pbr:mapMode') || 'status'; mapView = localStorage.getItem('pbr:mapView'); } catch {}
+/* one colour rule for every map: Status (not counted / counted / problem), Ripeness (bunches developing), Problems only */
+function palmCls(id, M, mode = mapMode, filter = mapFilter) {
+  const p = S.palms[id], L = M.latest[id], cur = !!(L && L.m === M.mo);
+  const flag = !!(p && p.flag && Object.values(p.flag).some(Boolean));
+  let c;
+  if (mode === 'ripe') { const v = cur ? devOf(L.s) : null; c = v == null ? 'c0' : v <= 1 ? 'l1' : v <= 3 ? 'l2' : 'l3'; if (flag) c += ' flag'; }
+  else if (mode === 'problem') c = flag ? 'c2' : 'c0 dim';
+  else c = flag ? 'c2' : cur ? 'c1' : 'c0';
+  const show = filter === 'all' || (filter === 'not' && !cur) || (filter === 'ov' && cur && +L.s.ov > 0) || (filter === 'male' && cur && L.male) || (filter === 'flagged' && flag);
+  return show ? c : c + ' dim';
+}
+const LEGENDS = {
+  status: [['c0', 'lgNot'], ['c1', 'lgDone'], ['c2', 'lgProb']],
+  ripe: [['c0', 'legend0'], ['l1', 'legend1'], ['l2', 'legend2'], ['l3', 'legend3'], ['flag', 'legendF']],
+  problem: [['c2', 'lgProb'], ['c0', 'lgOk']]
+};
+const hasGps = () => Object.values(S.palms).some(p => p && p.loc);
 function renderMap(M) {
-  const bs = blocks();
+  const bs = blocks(), gps = hasGps();
+  let chosen = null; try { chosen = localStorage.getItem('pbr:mapView'); } catch {}
+  mapView = chosen === 'rows' || (chosen === 'sat' && (gps || satExtra.length)) ? chosen : (gps || satExtra.length) ? 'sat' : 'rows';
+  $('mapView').innerHTML = [['sat', 'mvSat'], ['rows', 'mvRows']].map(([k, l]) => `<button data-mv="${k}" aria-pressed="${mapView === k}">${esc(t(l))}</button>`).join('');
+  $('mapMode').innerHTML = [['status', 'mmStatus'], ['ripe', 'mmRipe'], ['problem', 'mmProb']].map(([k, l]) => `<button data-mm="${k}" aria-pressed="${mapMode === k}">${esc(t(l))}</button>`).join('');
+  $('legend').innerHTML = LEGENDS[mapMode].map(([c, l]) => `<span><i class="lg ${c}"></i>${esc(t(l))}</span>`).join('');
+  const fl = { not: 'fNot', ov: 'fOv', male: 'fMale', flagged: 'fFlagged' }[mapFilter];
+  $('mapFilterChip').innerHTML = fl ? `<button class="chip on" data-mf="all">${esc(t('mapOnly', t(fl)))} &#10005;</button>` : '';
+  const sat = mapView === 'sat';
+  $('satWrap').hidden = $('satPlaces').hidden = $('satCsv').hidden = !sat;
+  $('rowsWrap').hidden = $('mapBlocks').hidden = sat;
+  if (sat) { renderSat(M); return; }
   if (!bs.find(b => b.id === mapBlock)) mapBlock = bs[0] ? bs[0].id : null;
   $('mapBlocks').innerHTML = bs.length > 1 ? bs.map(b => `<button class="chip" data-mb="${esc(b.id)}" aria-pressed="${b.id === mapBlock}">${esc(b.id)}</button>`).join('') : '';
-  $('mapFilters').innerHTML = [['all', 'fAll'], ['not', 'fNot'], ['ov', 'fOv'], ['male', 'fMale'], ['flagged', 'fFlagged']].map(([k, l]) => `<button class="chip" data-mf="${k}" aria-pressed="${mapFilter === k}">${esc(t(l))}</button>`).join('');
-  $('legend').innerHTML = `<span><i style="background:var(--h0)"></i>${esc(t('legend0'))}</span><span><i style="background:var(--h1)"></i>${esc(t('legend1'))}</span><span><i style="background:var(--h2)"></i>${esc(t('legend2'))}</span><span><i style="background:var(--h3)"></i>${esc(t('legend3'))}</span><span><i style="box-shadow:inset 0 0 0 2px var(--bad)"></i>${esc(t('legendF'))}</span>`;
   const b = blockOf(mapBlock); if (!b) { $('heat').innerHTML = ''; $('fieldMap').innerHTML = ''; $('mapHint').textContent = ''; return; }
   const useLayout = Array.isArray(b.rows) && b.rows.length > 0;
   $('heat').hidden = useLayout;
   let h = '', g = '';
   for (let i = 1; i <= (+b.palms || 0); i++) {
-    const id = palmId(b.id, i), p = S.palms[id], L = M.latest[id], cur = L && L.m === M.mo;
-    const v = L ? devOf(L.s) : null;
-    const lvl = v == null ? '' : v <= 1 ? 'l1' : v <= 3 ? 'l2' : 'l3';
-    const isFlag = !!(p && p.flag && Object.values(p.flag).some(Boolean));
-    const show = mapFilter === 'all' || (mapFilter === 'not' && !cur) || (mapFilter === 'ov' && cur && +L.s.ov > 0) || (mapFilter === 'male' && cur && L.male) || (mapFilter === 'flagged' && isFlag);
-    const cls = `${lvl}${isFlag ? ' flag' : ''}${show ? '' : ' dim'}`;
+    const id = palmId(b.id, i), cls = palmCls(id, M);
     if (!useLayout) { h += `<button class="${cls}" data-open="${id}" aria-label="${id}">${i}</button>`; continue; }
     const xy = palmXY(b, i); if (!xy) continue;
     g += `<g class="${cls}" data-open="${id}" role="button" aria-label="${id}"><circle cx="${xy[0].toFixed(1)}" cy="${xy[1].toFixed(1)}" r="3.6"/><text x="${xy[0].toFixed(1)}" y="${(xy[1] + 1).toFixed(1)}" font-size="2.8" text-anchor="middle">${i}</text></g>`;
   }
   $('heat').innerHTML = useLayout ? '' : h;
-  if (!useLayout) { $('fieldMap').innerHTML = ''; $('mapHint').textContent = ''; return; }
-  // row labels on the schematic view, then fit the drawing
+  if (!useLayout) { $('fieldMap').innerHTML = ''; $('mapHint').textContent = t('mapHintGrid'); return; }
   const pts = []; for (let i = 1; i <= (+b.palms || 0); i++) { const xy = palmXY(b, i); if (xy) pts.push(xy); }
   if (!hasPos(b)) { let n = 0; b.rows.forEach((c, r) => { const xy = palmXY(b, n + 1); if (xy) g += `<text class="rl" x="${(xy[0] - 7).toFixed(1)}" y="${(xy[1] + 1.2).toFixed(1)}" font-size="3.4" text-anchor="end">R${r + 1}</text>`; n += c; }); }
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
@@ -581,6 +602,8 @@ function renderMap(M) {
   $('fieldMap').innerHTML = `<svg class="field-map" viewBox="${x0.toFixed(1)} ${y0.toFixed(1)} ${(x1 - x0).toFixed(1)} ${(y1 - y0).toFixed(1)}" role="img" aria-label="${esc(t('palmMap'))}">${g}</svg>`;
   $('mapHint').textContent = t(hasPos(b) ? 'mapHintGps' : 'mapHintRows');
 }
+$('mapView').onclick = e => { const b = e.target.closest('[data-mv]'); if (!b) return; mapView = b.dataset.mv; try { localStorage.setItem('pbr:mapView', mapView); } catch {} renderMap(metrics()); };
+$('mapMode').onclick = e => { const b = e.target.closest('[data-mm]'); if (!b) return; mapMode = b.dataset.mm; try { localStorage.setItem('pbr:mapMode', mapMode); } catch {} renderMap(metrics()); };
 function renderTickets() {
   const list = S.tickets.slice().sort((a, b) => a.date < b.date ? 1 : -1);
   $('ticketList').innerHTML = list.length ? list.map(tk => `<li><span class="id">${esc(fmtDate(tk.date))}</span><span class="grow">${esc(tk.block || '')}${tk.no ? ' · #' + esc(tk.no) : ''}${tk.bunches ? ` · ${nf(tk.bunches)} ${esc(LANG === 'te' ? 'గెలలు' : 'bunches')} · ${nf(tk.tonnes * 1000 / tk.bunches, 1)} kg` : ''}</span><span class="num">${nf(tk.tonnes, 3)} ${esc(t('unitT'))}</span>${S.canEdit ? `<button class="btn small" data-deltk="${esc(tk.id)}">${esc(t('del'))}</button>` : ''}</li>`).join('') : `<li class="empty">${esc(t('noTickets'))}</li>`;
@@ -847,18 +870,17 @@ function palmSt(id, M) {
 }
 function gpsPoints(M, hi) {
   const pts = [];
-  for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) { const pr = parseId(id); pts.push({ id, n: pr ? pr.n : id, lat: p.loc.lat, lng: p.loc.lng, acc: p.loc.acc, st: palmSt(id, M), hi: id === hi }); }
+  for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) { const pr = parseId(id); pts.push({ id, n: pr ? pr.n : id, lat: p.loc.lat, lng: p.loc.lng, acc: p.loc.acc, st: palmSt(id, M), cls: palmCls(id, M, 'status', 'all'), hi: id === hi }); }
   return pts;
 }
 const palmsMap = createSatMap($('satMap'), $('satPlaces'), { open: id => openPalm(id), label: (i, n) => esc(t('satPlace', i, nf(n))) });
-function renderSat() {
-  if (tab !== 'palms') return;
-  const pts = gpsPoints(metrics()), seen = new Set(pts.map(p => p.id));
-  for (const q of satExtra) if (!seen.has(q.id)) pts.push(q);
-  $('satHint').textContent = pts.length ? t('satHint', nf(pts.length)) : t('satNone');
+function renderSat(M = metrics()) {
+  if (tab !== 'palms' || mapView !== 'sat') return;
+  const pts = gpsPoints(M).map(p => ({ ...p, cls: palmCls(p.id, M) })), seen = new Set(pts.map(p => p.id));
+  for (const q of satExtra) if (!seen.has(q.id)) pts.push({ ...q, cls: 'c0' });
+  $('mapHint').textContent = pts.length ? t('satHint', nf(pts.length)) : t('satNone');
   try { palmsMap.draw(pts); } catch {}
 }
-
 /* ---------- Walk screen: live map + the palm you are standing at ---------- */
 const walkMap = createSatMap($('walkMap'), null, { open: id => { autoId = id; openPalm(id, true); }, rings: false, follow: true });
 let walkNear = null, typeOpen = false, typeUser = false;
@@ -907,7 +929,7 @@ $('satFile').onchange = async e => {
     if (iLa < 0 || iLo < 0) throw 0;
     satExtra = lines.map(l => l.split(',')).map((c, k) => ({ id: c[iId] || 'P' + (k + 1), n: c[iN] || k + 1, lat: +c[iLa], lng: +c[iLo], acc: +c[iA] || 0 })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
     if (!satExtra.length) throw 0;
-    renderSat(); toast(t('satLoaded', nf(satExtra.length)));
+    mapView = 'sat'; renderMap(metrics()); toast(t('satLoaded', nf(satExtra.length)));
   } catch { toast(t('satBad')); }
 };
 window.addEventListener('resize', () => { palmsMap.resize(); walkMap.resize(); });
@@ -918,7 +940,7 @@ document.addEventListener('click', e => {
   const o = e.target.closest('[data-open]'); if (o) { openPalm(o.dataset.open); return; }
   const mb = e.target.closest('[data-mb]'); if (mb) { mapBlock = mb.dataset.mb; renderMap(metrics()); return; }
   const mf = e.target.closest('[data-mf]'); if (mf) { mapFilter = mf.dataset.mf; renderMap(metrics()); return; }
-  const j = e.target.closest('[data-jump]'); if (j) { const v = j.dataset.jump; if (v.startsWith('map:')) { mapFilter = v.slice(4); setTab('palms'); renderMap(metrics()); } return; }
+  const j = e.target.closest('[data-jump]'); if (j) { const v = j.dataset.jump; if (v.startsWith('map:')) { mapFilter = v.slice(4); if (mapFilter === 'ov') mapMode = 'ripe'; else if (mapFilter === 'flagged') mapMode = 'problem'; else mapMode = 'status'; setTab('palms'); } return; }
   const dt = e.target.closest('[data-deltk]');
   if (dt && db) {
     if (dt.dataset.armed !== '1') { dt.dataset.armed = '1'; dt.textContent = '✓ ' + t('del'); setTimeout(() => { if (dt.isConnected) { dt.dataset.armed = ''; dt.textContent = t('del'); } }, 3000); return; }

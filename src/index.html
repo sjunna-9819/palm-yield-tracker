@@ -107,22 +107,18 @@
     </section>
 
     <!-- Palms -->
-    <section data-view="palms" class="panel" hidden>
-      <h2 data-t="satTitle"></h2>
-      <div class="blocktabs" id="satPlaces"></div>
-      <div id="satMap" class="sat-map"></div>
-      <div class="hint" id="satHint"></div>
-      <button class="btn" id="satCsv" data-t="satCsv" style="margin-top:8px"></button>
-      <input type="file" id="satFile" accept=".csv,text/csv" hidden>
-    </section>
-    <section data-view="palms" class="panel" hidden>
-      <h2 data-t="palmMap"></h2>
+    <section data-view="palms" class="panel map-panel" hidden>
+      <div class="map-head"><h2 data-t="mapTitle" style="margin:0"></h2><div class="seg" id="mapView" role="group"></div></div>
+      <div class="map-row"><span class="map-lbl" data-t="mapColour"></span><div class="seg" id="mapMode" role="group"></div></div>
       <div class="blocktabs" id="mapBlocks"></div>
-      <div class="blocktabs" id="mapFilters"></div>
+      <div class="blocktabs" id="satPlaces"></div>
       <div class="legend" id="legend"></div>
-      <div class="grid-wrap"><div class="heat" id="heat"></div></div>
-      <div id="fieldMap"></div>
+      <div id="mapFilterChip"></div>
+      <div id="satWrap"><div id="satMap" class="sat-map"></div></div>
+      <div id="rowsWrap"><div class="grid-wrap"><div class="heat" id="heat"></div></div><div id="fieldMap"></div></div>
       <div class="hint" id="mapHint"></div>
+      <button class="btn small" id="satCsv" data-t="satCsv" style="margin-top:8px"></button>
+      <input type="file" id="satFile" accept=".csv,text/csv" hidden>
     </section>
     <section data-view="palms" class="panel" hidden>
       <h2 data-t="fieldTools"></h2>
