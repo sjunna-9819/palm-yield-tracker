@@ -25,6 +25,7 @@ service cloud.firestore {
 
     match /config/{d} { allow read: if member(); allow write: if admin(); }
     match /palms/{id} { allow read, write: if member(); }
+    match /survey/{block} { allow read, write: if member(); }
     match /tickets/{id} { allow read, create, update: if member(); allow delete: if admin(); }
   }
 }
