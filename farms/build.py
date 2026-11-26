@@ -116,6 +116,7 @@ F = {'W': W, 'H': H, 'area': A['area'] + B['area'], 'span': 2.9, 'key': 'both', 
      'polys': [sh(A['poly'], off['farm1']), sh(B['poly'], off['farm2'])],
      'wets': [A.get('wet'), B.get('wet')],
      'bamboos': [A.get('bamboo', 0), B.get('bamboo', 0)],
+     'geos': [dict(A['geo'], dx=off['farm1']) if A.get('geo') else None, dict(B['geo'], dx=off['farm2']) if B.get('geo') else None],
      'tags': [{'name': 'Farm 1', 'x': sum(p[0] for p in A['poly']) / len(A['poly']) + off['farm1'], 'z': sum(p[1] for p in A['poly']) / len(A['poly'])},
               {'name': 'Farm 2', 'x': sum(p[0] for p in B['poly']) / len(B['poly']) + off['farm2'], 'z': sum(p[1] for p in B['poly']) / len(B['poly'])}]}
 F['poly'] = F['polys'][0]

@@ -288,7 +288,7 @@ const BUNCH = [0x1a1614, 0x221816, 0x2e1a15, 0x3a1d14, 0x6e2a12, 0x9a3a14].map(l
 const qs = new URLSearchParams(location.search), BLOCK = qs.get('block') || 'file';
 const RAW_KEY = 'pyt.trees.' + BLOCK, FIT_KEY = 'pyt.fit.' + F.key + '.' + BLOCK;
 let gpsInfo = null;
-function fitGps(trees) {
+function fitGps(trees, centre = farmCentre(), range = 150) {
   const o = trees[0], kx = 111320 * Math.cos(o.lat * Math.PI / 180), ky = 110540;
   const G = trees.map(t => [(t.lng - o.lng) * kx, -(t.lat - o.lat) * ky]);
   const ref = F.palms.filter(p => inPoly(p[0], p[1]) && !inYard(p[0], p[1]));
@@ -301,8 +301,8 @@ function fitGps(trees) {
   const place = (rot, dx, dz) => { const c = Math.cos(rot), s = Math.sin(rot); return G.map(p => { const x = p[0] - gc[0], z = p[1] - gc[1]; return [x * c - z * s + dx, x * s + z * c + dz]; }); };
   const score = pts => { let t = 0; const step = Math.max(1, Math.floor(pts.length / 200)); for (let i = 0; i < pts.length; i += step) t += near(pts[i][0], pts[i][1])[0]; return t; };
   let best = { s: 1e18 };
-  const [cx0, cz0] = farmCentre();
-  for (let r = -6; r <= 6; r += 3) for (let dx = -150; dx <= 150; dx += 6) for (let dz = -150; dz <= 150; dz += 6) {
+  const [cx0, cz0] = centre;
+  for (let r = -6; r <= 6; r += 3) for (let dx = -range; dx <= range; dx += 6) for (let dz = -range; dz <= range; dz += 6) {
     const rot = r * Math.PI / 180, sc = score(place(rot, cx0 + dx, cz0 + dz)); if (sc < best.s) best = { s: sc, rot, dx: cx0 + dx, dz: cz0 + dz }; }
   for (const st of [2, 0.5]) { const b0 = { ...best };
     for (let r = -2; r <= 2; r++) for (let dx = -4; dx <= 4; dx++) for (let dz = -4; dz <= 4; dz++) {
@@ -314,18 +314,58 @@ function fitGps(trees) {
   return { pts: pts.map((p, i) => [+p[0].toFixed(2), +p[1].toFixed(2), ages[i] ?? med]), err, rot: best.rot * 180 / Math.PI };
 }
 function farmCentre() { let x = 0, z = 0; POLYS.forEach(q => { let a = 0, b = 0; q.forEach(p => { a += p[0]; b += p[1]; }); x += a / q.length / POLYS.length; z += b / q.length / POLYS.length; }); return [x, z]; }   // middle of the farms' centres
+/* farms pinned to real coordinates (matched to satellite imagery): a geo tag goes straight to its spot.
+   geo = the photo centre's lat/lng, sc = real metres per model metre, dx = page shift (both-farms page). */
+const GEOS = F.geos || (F.geo ? [Object.assign({ dx: 0 }, F.geo)] : null);
+function geoPlace(t) {
+  if (!GEOS) return null;
+  for (let i = 0; i < GEOS.length; i++) { const g = GEOS[i]; if (!g) continue;
+    const kx = 111320 * Math.cos(g.lat * Math.PI / 180), ky = 110540;
+    const x = (t.lng - g.lng) * kx / g.sc + (g.dx || 0), z = -(t.lat - g.lat) * ky / g.sc;
+    if (inPoly(x, z, POLYS[i] || POLYS[0])) return [x, z, i]; }
+  return null;
+}
+let gpsMarks = [];
 try {
+  if (BLOCK === 'tags' && GEOS) {
+    const raw = JSON.parse(localStorage.getItem(RAW_KEY) || '[]'), placed = [];
+    for (const t of raw) { if (!Number.isFinite(t.lat) || !Number.isFinite(t.lng)) continue; const q = geoPlace(t); if (q) placed.push({ id: t.id, x: q[0], z: q[1] }); }
+    // keep each tagged palm's age from the nearest photo palm, then drop photo palms it replaces
+    const ref = F.palms.slice();
+    const age = (x, z) => { let best = 1e9, a = 0.6; for (const p of ref) { const d = Math.hypot(p[0] - x, p[1] - z); if (d < best) { best = d; a = p[2]; } } return best < 6 ? a : 0.6; };
+    const pts = placed.map(p => [+p.x.toFixed(2), +p.z.toFixed(2), age(p.x, p.z)]);
+    F.palms = ref.filter(p => !pts.some(g => Math.hypot(g[0] - p[0], g[1] - p[1]) < 4.5)).concat(pts);
+    gpsMarks = placed; gpsInfo = { geo: true, n: placed.length, total: raw.length };
+  }
+} catch (e) { /* no tags */ }
+try {
+  if (BLOCK === 'tags' && GEOS) throw 0;
   const raw = JSON.parse(localStorage.getItem(RAW_KEY) || 'null');
   if (Array.isArray(raw) && raw.length) {
     const sig = raw.length + ':' + raw[0].lat + ':' + raw[0].lng + ':' + raw[raw.length - 1].lat + ':' + raw[raw.length - 1].lng;
     let fit = JSON.parse(localStorage.getItem(FIT_KEY) || 'null');
-    if (!fit || fit.sig !== sig) {
-      const f = fitGps(raw.filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng)));
-      fit = { sig, pts: f.pts, err: f.err, rot: f.rot, n: raw.length };
+    if (!fit || fit.sig !== sig || fit.v !== 2) {
+      // tagged palms can sit on different farms (km apart): fit each group on its own and keep
+      // only groups that land on this page's palms (average gap under 3 m)
+      const ok = raw.filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng)), groups = [];
+      const gm = (a, b) => Math.hypot((a.lat - b.lat) * 110540, (a.lng - b.lng) * 111320 * Math.cos(a.lat * Math.PI / 180));
+      for (const t of ok) { const g = groups.find(g => g.some(q => gm(q, t) < 300)); if (g) g.push(t); else groups.push([t]); }
+      const centres = POLYS.map(q => q.reduce((a, p) => [a[0] + p[0] / q.length, a[1] + p[1] / q.length], [0, 0]));
+      const fits = [];
+      for (const g of groups) {
+        if (g.length < 3) continue;
+        let best = null;
+        for (const c of centres) { const f = fitGps(g, c, 260); if (!best || f.err < best.err) best = f; }
+        fits.push({ ...best, n: g.length, ids: g.map(t => t.id || '') });
+      }
+      const good = fits.filter(f => f.err < 3), use = good.length ? good : fits.sort((a, b) => a.err - b.err).slice(0, 1);
+      const pts = [].concat(...use.map(f => f.pts.map((p, i) => [...p, f.ids[i]])));
+      const n = use.reduce((a, f) => a + f.n, 0);
+      fit = { v: 2, sig, pts, err: use.length ? use.reduce((a, f) => a + f.err * f.n, 0) / Math.max(1, n) : 0, rot: use.length ? use[0].rot : 0, n, total: ok.length, groups: groups.length, used: use.length, weak: !good.length };
       try { localStorage.setItem(FIT_KEY, JSON.stringify(fit)); } catch (e) {}
     }
     const keep = F.palms.filter(p => !fit.pts.some(g => Math.hypot(g[0] - p[0], g[1] - p[1]) < 4.5));
-    F.palms = keep.concat(fit.pts); gpsInfo = fit;
+    F.palms = keep.concat(fit.pts.map(p => p.slice(0, 3))); gpsInfo = fit;
   }
 } catch (e) { /* no GPS trees */ }
 
@@ -498,6 +538,14 @@ POLYS.forEach((poly, pi) => { const pts = poly.concat([poly[0]]), posts = [], W8
   const bund = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: 0x8f7652, roughness: 1, side: THREE.DoubleSide }));
   bund.receiveShadow = true; fence.add(bund); });
 scene.add(fence);
+
+/* ---------- geo-tagged palms: yellow ring around each one (seen through the crowns) ---------- */
+if (gpsMarks.length) {
+  const rg = new THREE.RingGeometry(3.6, 4.4, 28); rg.rotateX(-Math.PI / 2);
+  const rim = new THREE.InstancedMesh(rg, new THREE.MeshBasicMaterial({ color: 0xf2c230, transparent: true, opacity: 0.95, depthWrite: false, depthTest: false }), gpsMarks.length);
+  gpsMarks.forEach((p, i) => { M.compose(V.set(p.x, heightAt(p.x, p.z) + 0.3, p.z), Q.identity(), S.set(1, 1, 1)); rim.setMatrixAt(i, M); });
+  rim.renderOrder = 6; scene.add(rim);
+}
 
 /* ---------- living bamboo hedge just outside the fence (F.bamboo = height in m; river side left open) ---------- */
 const BAMB = F.bamboos || [F.bamboo || 0];
@@ -676,7 +724,11 @@ tog('tFence', on => fence.visible = on);
 tog('tBunch', on => bunches.visible = on);
 tog('tNbr', on => nbr.visible = on);
 tog('tSpin', on => { controls.autoRotate = on; controls.autoRotateSpeed = 0.6; });
-$('gpsLoad').onclick = () => $('gpsFile').click();
+$('gpsLoad').onclick = () => {
+  let tags = null; try { tags = JSON.parse(localStorage.getItem('pyt.trees.tags') || 'null'); } catch (e) {}
+  if (Array.isArray(tags) && tags.length) { location.search = '?block=tags'; return; }
+  $('gpsFile').click();
+};
 $('gpsFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   const note = $('gpsNote'); note.hidden = false;
@@ -692,7 +744,13 @@ $('gpsClear').onclick = () => { try { localStorage.removeItem(FIT_KEY); if (BLOC
 if (gpsInfo) {
   $('gpsClear').hidden = false;
   $('gpsNote').hidden = false;
-  $('gpsNote').textContent = `${gpsInfo.n} palms are placed from GPS (${BLOCK === 'file' ? 'loaded file' : 'block ' + BLOCK}), fitted to the photo with an average gap of ${gpsInfo.err.toFixed(1)} m${Math.abs(gpsInfo.rot) > 0.5 ? `, turned ${gpsInfo.rot.toFixed(1)}°` : ''}. Rows not surveyed yet still use the photo.`;
+  $('gpsNote').textContent = gpsInfo.geo
+    ? (gpsInfo.n ? `${gpsInfo.n} of your ${gpsInfo.total} geo-tagged palms are on ${F.geos ? 'these farms' : 'this farm'}, each placed exactly at its GPS spot (yellow ring).${gpsInfo.total > gpsInfo.n ? ` The other ${gpsInfo.total - gpsInfo.n} are on another farm.` : ''} Palms not tagged yet still come from the photo.`
+      : `None of your ${gpsInfo.total} geo-tagged palms are on this farm. Open the other farm and tap GPS palms there.`)
+    : BLOCK === 'tags'
+    ? (gpsInfo.weak ? `Your geo-tagged palms do not match this farm's photo well (average gap ${gpsInfo.err.toFixed(1)} m). They may belong to the other farm: open that farm and tap GPS palms there.`
+      : `${gpsInfo.n} of your ${gpsInfo.total} geo-tagged palms are on this farm and are placed at their GPS spots (average gap to the photo ${gpsInfo.err.toFixed(1)} m${Math.abs(gpsInfo.rot) > 0.5 ? `, turned ${gpsInfo.rot.toFixed(1)}°` : ''}).${gpsInfo.total > gpsInfo.n ? ` The other ${gpsInfo.total - gpsInfo.n} are on another farm.` : ''} Palms not tagged yet still come from the photo.`)
+    : `${gpsInfo.n} palms are placed from GPS (${BLOCK === 'file' ? 'loaded file' : 'block ' + BLOCK}), fitted to the photo with an average gap of ${gpsInfo.err.toFixed(1)} m${Math.abs(gpsInfo.rot) > 0.5 ? `, turned ${gpsInfo.rot.toFixed(1)}°` : ''}. Rows not surveyed yet still use the photo.`;
 }
 $('more').onclick = () => { const o = $('card').classList.toggle('open'); $('more').setAttribute('aria-expanded', o); $('more').textContent = o ? 'Less' : 'More'; };
 

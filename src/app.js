@@ -480,7 +480,14 @@ function kpi(v, label, alert, jump, sw) {
   return jump ? `<button class="kpi${alert ? ' alert' : ''}" data-jump="${jump}">${inner}</button>` : `<div class="kpi${alert ? ' alert' : ''}">${inner}</div>`;
 }
 function pillsFor(s) { return STAGES.filter(x => +s[x.k] > 0).map(x => `<span class="pill"><i style="background:var(${x.css})"></i>${nf(+s[x.k])}</span>`).join(''); }
+let lastTags = '';
+function shareTags() {   // the 3D farm pages read the palms' GPS spots from here (same website, this phone)
+  const tags = []; for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) tags.push({ id, lat: p.loc.lat, lng: p.loc.lng });
+  tags.sort((a, b) => a.id < b.id ? -1 : 1); const js = JSON.stringify(tags);
+  if (js !== lastTags) { lastTags = js; try { localStorage.setItem('pyt.trees.tags', js); } catch {} }
+}
 function renderAll() {
+  shareTags();
   refreshBlocks();
   if (tab === 'tag') renderTag();
   setTimeout(autoNear, 0);
