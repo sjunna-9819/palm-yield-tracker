@@ -63,7 +63,20 @@
       <ul class="rows" id="todayList"></ul>
     </section>
 
-    <!-- Dashboard -->
+    <!-- Today (owner overview) -->
+    <section data-view="dash" class="today-hero" hidden>
+      <div class="th-top"><div><div class="th-big" id="tdBig"></div><div class="th-sub" id="tdSub"></div></div><div class="th-ring" id="tdRing"></div></div>
+      <div class="th-blocks" id="tdBlocks"></div>
+      <div class="th-pace" id="tdPace"></div>
+    </section>
+    <section data-view="dash" class="panel" hidden>
+      <h2 data-t="tdToday"></h2>
+      <div class="th-today" id="tdToday"></div>
+    </section>
+    <section data-view="dash" class="panel" hidden>
+      <h2 data-t="tdAttn"></h2>
+      <div id="tdAttn"></div>
+    </section>
     <section data-view="dash" hidden>
       <h2 data-t="thisMonth"></h2>
       <div class="kpis" id="dashKpis"></div>

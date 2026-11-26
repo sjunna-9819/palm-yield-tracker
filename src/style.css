@@ -375,3 +375,28 @@ table.setup input { width: 100%; min-width: 56px; box-sizing: border-box; height
 .fold-n { font-family: var(--f-ui); text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--ink); }
 .fold-n.bad { background: var(--bad); color: #fff; border-radius: 999px; padding: 2px 9px; }
 .savebar .btn.fruit { font-size: 19px; }
+
+/* ---------- Today (owner overview) ---------- */
+.today-hero { background: var(--surface); border: 2px solid var(--leaf); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.th-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.th-big { font-family: var(--f-num); font-weight: 700; font-size: 28px; line-height: 1.1; }
+.th-sub { color: var(--muted); font-size: 15px; margin-top: 4px; }
+.th-ring { flex: none; color: var(--ink); }
+.th-ring text { font-family: var(--f-num); }
+.th-blocks { display: flex; flex-direction: column; gap: 8px; }
+.th-blocks:empty { display: none; }
+.th-b { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; font-size: 15px; }
+.th-bn { font-family: var(--f-num); font-weight: 700; font-size: 17px; }
+.th-b .bar { height: 12px; border-radius: 6px; background: var(--h0); overflow: hidden; }
+.th-b .bar i { display: block; height: 100%; background: var(--ok); border-radius: 6px; }
+.th-bv { font-variant-numeric: tabular-nums; color: var(--muted); }
+.th-pace { font-size: 15px; font-weight: 600; }
+.th-pace:empty { display: none; }
+.th-today { display: flex; flex-direction: column; gap: 8px; }
+.th-tn { font-family: var(--f-num); font-weight: 700; font-size: 24px; }
+.th-who, .th-ids { display: flex; flex-wrap: wrap; gap: 8px; }
+#tdAttn { display: flex; flex-direction: column; gap: 12px; }
+.th-att { border-left: 4px solid var(--warn); padding-left: 12px; display: flex; flex-direction: column; gap: 8px; }
+.th-att.bad { border-left-color: var(--bad); }
+.th-at { font-weight: 700; font-size: 16px; }
+.th-ids .chip { font-family: var(--f-num); font-size: 15px; min-height: 40px; }
