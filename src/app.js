@@ -5,7 +5,7 @@ import '@fontsource/mandali/400.css';
 import qrcode from 'qrcode-generator';
 import { jsPDF } from 'jspdf';
 import { claude, scanTag, getLocation, watchLocation, localData, isShared, uploadLocal, syncState, clearSyncError, serverCounts } from './platform.js';
-import { drawSatMap, resizeSatMap } from './satmap.js';
+import { createSatMap } from './satmap.js';
 import { initSurvey, showSurvey, refreshBlocks, averageGps } from './survey.js';
 (() => {
 const $ = id => document.getElementById(id);
@@ -58,7 +58,7 @@ const T = {
   dataTitle:'Data and backup', dataExport:'Export all data (JSON)', dataImport:'Import data file', dataUpload:'Copy this phone\'s data to the farm database',
   dataLocal:'Phone-only mode: data is saved on this phone. Export a backup now and then. Add Firebase (SETUP.md) to share between phones.', dataShared:'Shared mode: every phone that joined the farm sees the same data.',
   dataAsk:'Load {0} palms, {1} mill tickets and the farm setup from this file? Records with the same ID are replaced.', dataLoaded:'Loaded {0} records.', dataBad:'That file is not a farm data backup.',
-  syLocal:'This phone only', syOk:'Synced', syWait:'{0} waiting for signal', sySend:'Sending {0}…', syOffline:'Offline', syErr:'Not saved to farm', syInfoOk:'Everything on this phone is saved to the farm database.', syInfoWait:'{0} saves are on this phone and will go to the farm database when there is signal. Keep the app open for a moment when you have signal.', syInfoOffline:'No signal now. Saves stay on this phone and go to the farm database later.', syInfoErr:'The farm database refused a save ({0}). Open that palm and save it again. If it keeps happening, tell the farm owner.', syInfoLocal:'This app is not connected to a farm database. Data stays on this phone only.', dbCount:'Farm database now holds {0} palms, {1} with GPS.', dbCountWait:'Checking the farm database…', dbCountFail:'Could not reach the farm database. Check signal.', ok:'OK', upFailed:'Copy failed ({0}). Nothing was copied. Check signal and try again.', dataUpAsk:'Copy {0} records from this phone to the farm database?', dataUploaded:'Copied {0} records.', yes:'Yes',
+  walkCount:'Count this palm', walkType:'Type number', walkGpsWait:'Getting GPS…', walkGpsWeak:'GPS weak ±{0} m. Step into the open.', walkGps:'GPS ±{0} m', walkAway:'{0} m away', walkHere:'You are at this palm', walkTodo:'Not counted', walkDone:'Counted', walkFlag:'Problem', walkFind:'Walk towards a palm', syLocal:'This phone only', syOk:'Synced', syWait:'{0} waiting for signal', sySend:'Sending {0}…', syOffline:'Offline', syErr:'Not saved to farm', syInfoOk:'Everything on this phone is saved to the farm database.', syInfoWait:'{0} saves are on this phone and will go to the farm database when there is signal. Keep the app open for a moment when you have signal.', syInfoOffline:'No signal now. Saves stay on this phone and go to the farm database later.', syInfoErr:'The farm database refused a save ({0}). Open that palm and save it again. If it keeps happening, tell the farm owner.', syInfoLocal:'This app is not connected to a farm database. Data stays on this phone only.', dbCount:'Farm database now holds {0} palms, {1} with GPS.', dbCountWait:'Checking the farm database…', dbCountFail:'Could not reach the farm database. Check signal.', ok:'OK', upFailed:'Copy failed ({0}). Nothing was copied. Check signal and try again.', dataUpAsk:'Copy {0} records from this phone to the farm database?', dataUploaded:'Copied {0} records.', yes:'Yes',
   layoutTitle:'Field layout', layoutHint:'Enter how many palms are in each row, in walking order. Palm numbers then run row by row: row 1 first, then row 2, and so on. Or load the backup file from the Palm Yield Tracker to use the real GPS positions. Tap Save setup after.',
   layRows:'Palms in each row, separated by commas', layDiamond:'Diamond planting (every other row shifted half a palm)', layImport:'Load from Palm Yield Tracker backup', layClear:'Clear layout',
   layNone:'No field layout for this block yet: palms are shown in number order.', layInfo:'{0} rows, {1} palms{2}.', layGps:', GPS positions', layMismatch:'Rows add up to {0} palms but the block has {1}. Saving sets the block to {0}.',
@@ -138,7 +138,7 @@ const T = {
   dataTitle:'డేటా మరియు బ్యాకప్', dataExport:'మొత్తం డేటా ఎగుమతి (JSON)', dataImport:'డేటా ఫైల్ దిగుమతి', dataUpload:'ఈ ఫోన్ డేటాను తోట డేటాబేస్‌కు కాపీ చేయి',
   dataLocal:'ఫోన్ మాత్రమే: డేటా ఈ ఫోన్‌లోనే ఉంటుంది. అప్పుడప్పుడు బ్యాకప్ ఎగుమతి చేయండి. ఫోన్ల మధ్య పంచుకోవడానికి Firebase జోడించండి (SETUP.md).', dataShared:'పంచుకునే విధానం: తోటలో చేరిన ప్రతి ఫోన్‌కు ఒకే డేటా కనిపిస్తుంది.',
   dataAsk:'ఈ ఫైల్ నుండి {0} చెట్లు, {1} మిల్ టికెట్లు, తోట సెటప్ లోడ్ చేయాలా? ఒకే ID ఉన్నవి మారతాయి.', dataLoaded:'{0} రికార్డులు లోడ్ అయ్యాయి.', dataBad:'ఇది తోట డేటా బ్యాకప్ కాదు.',
-  syLocal:'ఈ ఫోన్ మాత్రమే', syOk:'సింక్ అయింది', syWait:'{0} సిగ్నల్ కోసం వేచి ఉన్నాయి', sySend:'{0} పంపుతోంది…', syOffline:'సిగ్నల్ లేదు', syErr:'తోటకు సేవ్ కాలేదు', syInfoOk:'ఈ ఫోన్‌లోని అన్నీ తోట డేటాబేస్‌లో సేవ్ అయ్యాయి.', syInfoWait:'{0} సేవ్‌లు ఈ ఫోన్‌లో ఉన్నాయి, సిగ్నల్ రాగానే తోట డేటాబేస్‌కు వెళ్తాయి. సిగ్నల్ ఉన్నప్పుడు యాప్ కాసేపు తెరిచి ఉంచండి.', syInfoOffline:'ఇప్పుడు సిగ్నల్ లేదు. సేవ్‌లు ఈ ఫోన్‌లో ఉండి తర్వాత తోట డేటాబేస్‌కు వెళ్తాయి.', syInfoErr:'తోట డేటాబేస్ ఒక సేవ్‌ను తిరస్కరించింది ({0}). ఆ చెట్టును తెరిచి మళ్ళీ సేవ్ చేయండి. మళ్ళీ జరిగితే తోట యజమానికి చెప్పండి.', syInfoLocal:'ఈ యాప్ తోట డేటాబేస్‌కు కనెక్ట్ కాలేదు. డేటా ఈ ఫోన్‌లోనే ఉంటుంది.', dbCount:'తోట డేటాబేస్‌లో ఇప్పుడు {0} చెట్లు, {1} కి GPS ఉంది.', dbCountWait:'తోట డేటాబేస్ చూస్తోంది…', dbCountFail:'తోట డేటాబేస్ అందలేదు. సిగ్నల్ చూడండి.', ok:'సరే', upFailed:'కాపీ విఫలమైంది ({0}). ఏదీ కాపీ కాలేదు. సిగ్నల్ చూసి మళ్ళీ ప్రయత్నించండి.', dataUpAsk:'ఈ ఫోన్ నుండి {0} రికార్డులు తోట డేటాబేస్‌కు కాపీ చేయాలా?', dataUploaded:'{0} రికార్డులు కాపీ అయ్యాయి.', yes:'అవును',
+  walkCount:'ఈ చెట్టు లెక్కించు', walkType:'నంబర్ టైప్ చేయి', walkGpsWait:'GPS తీసుకుంటోంది…', walkGpsWeak:'GPS బలహీనం ±{0} మీ. ఖాళీ ప్రదేశంలోకి రండి.', walkGps:'GPS ±{0} మీ', walkAway:'{0} మీ దూరం', walkHere:'మీరు ఈ చెట్టు దగ్గర ఉన్నారు', walkTodo:'లెక్కించలేదు', walkDone:'లెక్కించారు', walkFlag:'సమస్య', walkFind:'ఒక చెట్టు వైపు నడవండి', syLocal:'ఈ ఫోన్ మాత్రమే', syOk:'సింక్ అయింది', syWait:'{0} సిగ్నల్ కోసం వేచి ఉన్నాయి', sySend:'{0} పంపుతోంది…', syOffline:'సిగ్నల్ లేదు', syErr:'తోటకు సేవ్ కాలేదు', syInfoOk:'ఈ ఫోన్‌లోని అన్నీ తోట డేటాబేస్‌లో సేవ్ అయ్యాయి.', syInfoWait:'{0} సేవ్‌లు ఈ ఫోన్‌లో ఉన్నాయి, సిగ్నల్ రాగానే తోట డేటాబేస్‌కు వెళ్తాయి. సిగ్నల్ ఉన్నప్పుడు యాప్ కాసేపు తెరిచి ఉంచండి.', syInfoOffline:'ఇప్పుడు సిగ్నల్ లేదు. సేవ్‌లు ఈ ఫోన్‌లో ఉండి తర్వాత తోట డేటాబేస్‌కు వెళ్తాయి.', syInfoErr:'తోట డేటాబేస్ ఒక సేవ్‌ను తిరస్కరించింది ({0}). ఆ చెట్టును తెరిచి మళ్ళీ సేవ్ చేయండి. మళ్ళీ జరిగితే తోట యజమానికి చెప్పండి.', syInfoLocal:'ఈ యాప్ తోట డేటాబేస్‌కు కనెక్ట్ కాలేదు. డేటా ఈ ఫోన్‌లోనే ఉంటుంది.', dbCount:'తోట డేటాబేస్‌లో ఇప్పుడు {0} చెట్లు, {1} కి GPS ఉంది.', dbCountWait:'తోట డేటాబేస్ చూస్తోంది…', dbCountFail:'తోట డేటాబేస్ అందలేదు. సిగ్నల్ చూడండి.', ok:'సరే', upFailed:'కాపీ విఫలమైంది ({0}). ఏదీ కాపీ కాలేదు. సిగ్నల్ చూసి మళ్ళీ ప్రయత్నించండి.', dataUpAsk:'ఈ ఫోన్ నుండి {0} రికార్డులు తోట డేటాబేస్‌కు కాపీ చేయాలా?', dataUploaded:'{0} రికార్డులు కాపీ అయ్యాయి.', yes:'అవును',
   layoutTitle:'పొలం వరుసలు', layoutHint:'ప్రతి వరుసలో ఎన్ని చెట్లు ఉన్నాయో నడిచే క్రమంలో రాయండి. చెట్ల నంబర్లు వరుస 1 నుండి మొదలై వరుసగా వస్తాయి. లేదా Palm Yield Tracker బ్యాకప్ ఫైల్ లోడ్ చేస్తే అసలు GPS స్థానాలు వస్తాయి. తర్వాత సెటప్ సేవ్ చేయండి.',
   layRows:'ప్రతి వరుసలో చెట్లు, కామాలతో', layDiamond:'డైమండ్ పద్ధతి (ప్రతి రెండో వరుస సగం చెట్టు జరిగి ఉంటుంది)', layImport:'Palm Yield Tracker బ్యాకప్ లోడ్ చేయండి', layClear:'వరుసలు తీసివేయండి',
   layNone:'ఈ బ్లాక్‌కు ఇంకా వరుసలు లేవు: చెట్లు నంబర్ క్రమంలో చూపిస్తున్నాం.', layInfo:'{0} వరుసలు, {1} చెట్లు{2}.', layGps:', GPS స్థానాలు', layMismatch:'వరుసల మొత్తం {0} చెట్లు, కానీ బ్లాక్‌లో {1}. సేవ్ చేస్తే బ్లాక్ {0} అవుతుంది.',
@@ -419,6 +419,7 @@ function setTab(name, push = true) {
   window.scrollTo(0, 0);
   if (name === 'palms') renderSat();
   if (name === 'setup') renderDbCount();
+  if (name === 'count') { renderWalk(metrics()); walkMap.resize(); }
 }
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 $('helpBtn').onclick = () => setTab(tab === 'guide' ? 'count' : 'guide');
@@ -488,7 +489,7 @@ function renderAll() {
   $('farmSub').textContent = c ? blocks().map(b => `${b.id}: ${t('acresShort', String(+b.acres || 0), nf(+b.palms || 0))}`).join('  ·  ') : '';
   fillBlockSelects();
   const M = metrics();
-  renderOpener(M);
+  renderOpener(M); renderWalk(M);
   $('todayList').innerHTML = M.todayRows.length ? M.todayRows.slice(0, 80).map(r => `<li><button class="id" data-open="${esc(r.id)}">${esc(r.id)}</button><span class="grow"><span class="pills">${pillsFor(r.s)}</span>${r.male ? ` ${esc(t('male'))}` : ''}${S.uid && r.by === S.uid ? ` · ${esc(t('you'))}` : ''}</span><span class="num">${nf(devOf(r.s))}</span></li>`).join('') : `<li class="empty">${esc(t('noneToday'))}</li>`;
   $('dashKpis').innerHTML =
     kpi(`${nf(M.counted)}<small> / ${nf(M.totalPalms)}</small>`, t('kCounted'), false, 'map:not') +
@@ -741,6 +742,7 @@ function openPalm(id, here = false) {
   const p = parseId(id); if (!p) return;
   const b = blockOf(p.block);
   if (S.config && b && (p.n < 1 || p.n > +b.palms)) { toast(t('badPalm', p.n, p.block, b.palms)); return; }
+  if (curPalm !== palmId(p.block, p.n)) $('pProbFold').open = false;
   curPalm = palmId(p.block, p.n); openedHere = here;
   if (!$('pMonth').value) $('pMonth').value = thisMonth();
   loadEntry(true);
@@ -772,6 +774,8 @@ function renderPalm() {
   const ex = p && p.c && p.c[$('pMonth').value];
   $('pExisting').textContent = ex && !dirty ? t('alreadyLogged') : '';
   if (!$('pGpsBtn').disabled) { $('pGps').textContent = gpsText(p); $('pGpsBtn').textContent = t(p && p.loc ? 'gpsImprove' : 'gpsBtn'); }
+  { const nF = FLAGS.filter(f => flagDraft[f.k]).length; $('pProbN').textContent = nF ? nf(nF) : ''; $('pProbN').classList.toggle('bad', !!nF); if (nF) $('pProbFold').open = true; }
+  $('pGpsMini').textContent = p && p.loc ? '±' + nf(p.loc.acc, 0) + ' m' : '—';
   $('pFlags').innerHTML = FLAGS.map(f => `<button class="chip" data-flag="${f.k}" aria-pressed="${!!flagDraft[f.k]}">${esc(t(f.t))}</button>`).join('');
   $('pHist').innerHTML = cs.length ? cs.slice(0, 24).map(c => `<li><span class="id">${esc(fmtMonth(c.m))}</span><span class="grow"><span class="pills">${pillsFor(c.s)}</span>${c.male ? ' ' + esc(t('male')) : ''}</span><span class="num">${nf(devOf(c.s))}</span>${S.canWrite !== false ? `<button class="btn small" data-delm="${c.m}">${esc(t('del'))}</button>` : ''}</li>`).join('') : `<li class="empty">${esc(t('notYet'))}</li>`;
   const ro = !db || S.canWrite === false;
@@ -835,14 +839,65 @@ $('pHist').addEventListener('click', async e => {
 
 /* ---------- satellite map ---------- */
 let satExtra = [];   // points from a CSV file, shown only (never saved)
+/* status of a palm this month: 0 not counted, 1 counted, 2 flagged (problem) */
+function palmSt(id, M) {
+  const p = S.palms[id];
+  if (p && p.flag && Object.values(p.flag).some(Boolean)) return 2;
+  const L = M.latest[id]; return L && L.m === M.mo ? 1 : 0;
+}
+function gpsPoints(M, hi) {
+  const pts = [];
+  for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) { const pr = parseId(id); pts.push({ id, n: pr ? pr.n : id, lat: p.loc.lat, lng: p.loc.lng, acc: p.loc.acc, st: palmSt(id, M), hi: id === hi }); }
+  return pts;
+}
+const palmsMap = createSatMap($('satMap'), $('satPlaces'), { open: id => openPalm(id), label: (i, n) => esc(t('satPlace', i, nf(n))) });
 function renderSat() {
   if (tab !== 'palms') return;
-  const pts = [], seen = new Set();
-  for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) { const pr = parseId(id); pts.push({ id, n: pr ? pr.n : id, lat: p.loc.lat, lng: p.loc.lng, acc: p.loc.acc }); seen.add(id); }
+  const pts = gpsPoints(metrics()), seen = new Set(pts.map(p => p.id));
   for (const q of satExtra) if (!seen.has(q.id)) pts.push(q);
   $('satHint').textContent = pts.length ? t('satHint', nf(pts.length)) : t('satNone');
-  try { drawSatMap($('satMap'), $('satPlaces'), pts, { open: id => openPalm(id), label: (i, n) => esc(t('satPlace', i, nf(n))) }); } catch {}
+  try { palmsMap.draw(pts); } catch {}
 }
+
+/* ---------- Walk screen: live map + the palm you are standing at ---------- */
+const walkMap = createSatMap($('walkMap'), null, { open: id => { autoId = id; openPalm(id, true); }, rings: false, follow: true });
+let walkNear = null, typeOpen = false, typeUser = false;
+function renderWalk(M) {
+  if (tab !== 'count') return;
+  const has = Object.values(S.palms).some(p => p && p.loc);
+  $('walkMapWrap').hidden = $('nextCard').hidden = !has;
+  if (!typeUser && typeOpen === has) setType(!has);
+  if (!has) return;
+  $('continueBtn').hidden = true;
+  try { walkMap.draw(gpsPoints(M, walkNear && walkNear.id)); walkMap.resize(); } catch {}
+  renderNextCard(M);
+}
+function renderNextCard(M) {
+  const f = lastFix, a = walkNear;
+  $('ncGps').className = 'nc-gps' + (f && f.acc <= NEAR_ACC ? ' good' : f ? ' weak' : '');
+  $('ncGps').textContent = !f ? t('walkGpsWait') : f.acc > NEAR_ACC ? t('walkGpsWeak', nf(f.acc, 0)) : t('walkGps', nf(f.acc, 0));
+  if (!a) { $('ncId').textContent = '—'; $('ncSt').textContent = ''; $('ncSt').className = 'nc-st'; $('ncSub').textContent = t('walkFind'); $('ncOpen').disabled = true; return; }
+  const st = palmSt(a.id, M || metrics());
+  $('ncId').textContent = a.id;
+  $('ncSt').textContent = t(['walkTodo', 'walkDone', 'walkFlag'][st]); $('ncSt').className = 'nc-st st-' + st;
+  $('ncSub').textContent = a.d <= NEAR_M ? t('walkHere') : t('walkAway', nf(a.d, a.d < 10 ? 1 : 0));
+  $('ncOpen').disabled = false;
+}
+function onWalkFix(f) {
+  if (tab !== 'count') return;
+  const list = nearest(f, 1); walkNear = list[0] || null;
+  try { walkMap.you(f); } catch {}
+  const M = metrics();
+  try { walkMap.draw(gpsPoints(M, walkNear && walkNear.id)); } catch {}
+  renderNextCard(M);
+}
+function setType(open) {
+  typeOpen = open; $('typePanel').hidden = !open; $('typeBtn').setAttribute('aria-expanded', open);
+  if (open && typeUser) setTimeout(() => $('typePanel').scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
+}
+$('typeBtn').onclick = () => { typeUser = true; setType(!typeOpen); };
+$('ncOpen').onclick = () => { if (walkNear) { autoId = walkNear.id; openPalm(walkNear.id, true); } };
+$('walkCenter').onclick = () => walkMap.recenter();
 $('satCsv').onclick = () => $('satFile').click();
 $('satFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -855,7 +910,7 @@ $('satFile').onchange = async e => {
     renderSat(); toast(t('satLoaded', nf(satExtra.length)));
   } catch { toast(t('satBad')); }
 };
-window.addEventListener('resize', resizeSatMap);
+window.addEventListener('resize', () => { palmsMap.resize(); walkMap.resize(); });
 
 /* ---------- global clicks, tickets ---------- */
 document.addEventListener('click', e => {
@@ -1107,6 +1162,7 @@ function nearest(fix, k = 3) {
 }
 function onFix(f) {
   lastFix = f;
+  onWalkFix(f);
   if (!nearMode) return;
   const list = nearest(f), have = list.length > 0;
   $('nearStat').textContent = !have ? t('nearNone') : f.acc > NEAR_ACC ? t('nearWeak', nf(f.acc, 0)) : t('nearAcc', nf(f.acc, 0));

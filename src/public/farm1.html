@@ -42,6 +42,20 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
   border-radius: 50%; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; }
 .compass svg { width: 34px; height: 34px; }
 #loading[hidden] { display: none; }
+.hours { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+.hours::-webkit-scrollbar { display: none; }
+.hours button { flex: none; min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: inherit; font: 600 14px var(--f-display); cursor: pointer; }
+.hours button[aria-pressed="true"] { background: #f5a623; border-color: #f5a623; color: #1b1b1b; }
+.hours button:disabled { opacity: .3; cursor: default; }
+.hours .play { min-width: 48px; background: rgba(245,166,35,.18); border-color: #f5a623; }
+.sunline { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; font-weight: 600; margin-top: 8px; }
+.sunline span { display: inline-flex; align-items: center; gap: 6px; }
+.sunline i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sunline .rise i { background: #f5a623; } .sunline .set i { background: #c2477a; }
+.suntag { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 15px var(--f-display); color: #1b1b1b; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
+.suntag.rise { background: #f5a623; } .suntag.set { background: #c2477a; color: #fff; }
+.seasons button { min-width: 0; padding: 0 10px; }
+.sunyear { font-size: 13px; line-height: 1.45; opacity: .9; }
 .tag3d { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 20px var(--f-display); letter-spacing: .04em; color: #fff; background: rgba(29, 42, 31, .82); padding: 4px 12px; border-radius: 8px; white-space: nowrap; }
 .tag3d::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 0; border-top-color: rgba(29, 42, 31, .82); }
 #loading { position: fixed; inset: 0; display: grid; place-items: center; font: 600 16px var(--f-body); color: var(--muted); pointer-events: none; }
@@ -55,6 +69,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
 .back { font: 600 13px var(--f-body); color: var(--accent); text-decoration: none; margin-right: 10px; }
 </style>
 <div id="stage"></div>
+<div class="suntag rise" id="riseTag" hidden></div><div class="suntag set" id="setTag" hidden></div>
 <div class="tag3d" id="tag3d" hidden>Farm 1</div>
 <div id="loading">Loading the farm…</div>
 <section class="card" id="card" aria-label="Farm details">
@@ -65,8 +80,13 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
     <div><b id="sPalms">605</b><span>palms seen</span></div>
     <div><b id="sPer">300 m</b><span>long side</span></div>
   </div>
+  <div class="sunline" id="sunline"></div>
+  <div class="hours" id="hours" role="group" aria-label="Hour of day"></div>
   <div class="more" style="display:flex;flex-direction:column;gap:10px">
     <label class="row" for="sun">Sun <input type="range" id="sun" min="6" max="18" step="0.25" value="9.5"><output id="sunOut">9:30</output></label>
+    <label class="row" for="doy">Date <input type="range" id="doy" min="1" max="365" step="1" value="180"><output id="doyOut"></output></label>
+    <div class="hours seasons" id="seasons"><button data-d="today">Today</button><button data-d="06-21">21 Jun</button><button data-d="09-22">22 Sep</button><button data-d="12-21">21 Dec</button><button class="play" id="yPlay">Play year</button></div>
+    <div class="sunyear" id="sunyear"></div>
     <div class="chips">
       <button class="chip" id="tFence" aria-pressed="true">Boundary</button>
       <button class="chip" id="tBunch" aria-pressed="true">Bunches</button>
@@ -645,22 +665,120 @@ if (BAMB.some(h => h > 0)) {
   cIM.castShadow = lIM.castShadow = true; cIM.receiveShadow = lIM.receiveShadow = true; scene.add(cIM, lIM);
 }
 
-/* ---------- sun by time of day (Nov, ~16.8°N: sun passes to the south) ---------- */
+/* ---------- real sun for the farm (16.79°N, 79.29°E, clock = IST) ----------
+   Scene axes: x = east, z = south, so north is -z. The Day picker switches between today and
+   the three dates that matter for shade (longest day, equinox, shortest day). */
+const LAT = 16.79, LON = 79.29, RAD = Math.PI / 180;
+const DIR16 = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const dirName = az => DIR16[Math.round(((az % 360) + 360) % 360 / 22.5) % 16];
+const clock = h => { const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${hh + (mm === 60 ? 1 : 0)}:${String(mm % 60).padStart(2, '0')}`; };
+let DOY = 0;
+const doyOf = v => { const d = v === 'today' ? new Date() : new Date(new Date().getFullYear() + '-' + v + 'T12:00:00'); return Math.round((d - new Date(d.getFullYear(), 0, 0)) / 864e5); };
+function setDay(v) { DOY = typeof v === 'number' ? v : doyOf(v); }
+const doyLabel = n => new Date(new Date().getFullYear(), 0, n).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+function sunDecl() { return 23.44 * Math.sin(2 * Math.PI * (284 + DOY) / 365) * RAD; }
+function solarShift() { const B = 2 * Math.PI * (DOY - 81) / 364, E = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B); return (4 * (LON - 82.5) + E) / 60; }
+function sunAt(h) {   // h = IST clock hours -> azimuth (deg from north, clockwise) and elevation (rad)
+  const dec = sunDecl(), H = 15 * (h + solarShift() - 12) * RAD, la = LAT * RAD;
+  const el = Math.asin(Math.sin(la) * Math.sin(dec) + Math.cos(la) * Math.cos(dec) * Math.cos(H));
+  const az = (Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(la) - Math.tan(dec) * Math.cos(la)) / RAD + 180 + 360) % 360;
+  return { az, el };
+}
+function riseSet() {
+  const dec = sunDecl(), la = LAT * RAD, c = (Math.sin(-0.833 * RAD) - Math.sin(la) * Math.sin(dec)) / (Math.cos(la) * Math.cos(dec));
+  const H0 = Math.acos(Math.max(-1, Math.min(1, c))) / RAD / 15, noon = 12 - solarShift();
+  const rise = noon - H0, set = noon + H0;
+  return { rise, set, riseAz: sunAt(rise).az, setAz: sunAt(set).az };
+}
+const azVec = (az, el = 0) => new THREE.Vector3(Math.sin(az * RAD) * Math.cos(el), Math.sin(el), -Math.cos(az * RAD) * Math.cos(el));
+
+// sunrise / sunset rays on the ground and the sun's path across the sky
+const sunGuide = new THREE.Group(); scene.add(sunGuide);
+const SC = farmCentre(), SR = Math.max(F.W, F.H) * 0.62 + 40;
+let RS = null;
+function buildGuide() {
+  sunGuide.children.slice().forEach(o => { sunGuide.remove(o); o.geometry.dispose(); });
+  RS = riseSet();
+  const ray = (az, col) => {
+    const g = new THREE.PlaneGeometry(5, SR); g.translate(0, SR / 2, 0); g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, side: THREE.DoubleSide }));
+    m.rotation.y = -az * RAD; m.position.set(SC[0], 26, SC[1]); m.renderOrder = 5; sunGuide.add(m);
+  };
+  ray(RS.riseAz, 0xf5a623); ray(RS.setAz, 0xc2477a);
+  // the whole year's swing: sunrise and sunset move between their 21 Jun and 21 Dec directions
+  const keep = DOY, ext = d => { DOY = doyOf(d); const r = riseSet(); return r; };
+  const J = ext('06-21'), D = ext('12-21'); DOY = keep;
+  const fan = (a0, a1, col) => {
+    const lo = Math.min(a0, a1), hi = Math.max(a0, a1), g = new THREE.RingGeometry(SR * 0.12, SR, 32, 1, (90 - hi) * RAD, (hi - lo) * RAD); g.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, depthWrite: false, depthTest: false, side: THREE.DoubleSide }));
+    m.position.set(SC[0], 25, SC[1]); m.renderOrder = 4; sunGuide.add(m);
+  };
+  fan(J.riseAz, D.riseAz, 0xf5a623); fan(J.setAz, D.setAz, 0xc2477a);
+  const noonEl = d => { DOY = doyOf(d); const r = riseSet(), n = sunAt((r.rise + r.set) / 2); return n; };
+  const nJ = noonEl('06-21'), nD = noonEl('12-21'), nT = (DOY = keep, sunAt((RS.rise + RS.set) / 2));
+  const side = n => n.az > 90 && n.az < 270 ? 'south' : 'north';
+  $('sunyear').innerHTML = `Shaded fans = how far sunrise and sunset move over the year.<br>Sunrise: ${dirName(J.riseAz)} ${Math.round(J.riseAz)}° (21 Jun) to ${dirName(D.riseAz)} ${Math.round(D.riseAz)}° (21 Dec). Sunset: ${dirName(J.setAz)} ${Math.round(J.setAz)}° to ${dirName(D.setAz)} ${Math.round(D.setAz)}°.<br>Noon sun on ${doyLabel(DOY)}: ${Math.round(nT.el / RAD)}° high, to the ${side(nT)}. (21 Jun: ${Math.round(nJ.el / RAD)}° to the ${side(nJ)}; 21 Dec: ${Math.round(nD.el / RAD)}° to the ${side(nD)}.)`;
+  const pts = []; for (let h = RS.rise; h <= RS.set + 1e-6; h += (RS.set - RS.rise) / 48) { const s0 = sunAt(h); pts.push(azVec(s0.az, Math.max(0, s0.el)).multiplyScalar(SR).add(new THREE.Vector3(SC[0], 2, SC[1]))); }
+  const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: 0xffd36b, dashSize: 8, gapSize: 6, transparent: true, opacity: 0.9, depthTest: false }));
+  arc.computeLineDistances(); sunGuide.add(arc);
+  $('sunline').innerHTML = `<span class="rise"><i></i>Sunrise ${clock(RS.rise)} · ${dirName(RS.riseAz)} ${Math.round(RS.riseAz)}°</span><span class="set"><i></i>Sunset ${clock(RS.set)} · ${dirName(RS.setAz)} ${Math.round(RS.setAz)}°</span>`;
+  $('riseTag').textContent = `Sunrise ${clock(RS.rise)}`; $('setTag').textContent = `Sunset ${clock(RS.set)}`;
+  const sl = $('sun'); sl.min = (Math.ceil(RS.rise * 4) / 4).toFixed(2); sl.max = (Math.floor(RS.set * 4) / 4).toFixed(2);
+}
+
 let envTimer = null;
 function setSun(h) {
-  const a = (h - 6) / 12 * Math.PI, el = Math.sin(a) * 0.93 + 0.03;
-  const d = new THREE.Vector3(Math.cos(a), Math.max(0.03, el), 0.45).normalize();
+  const s0 = sunAt(h), el = Math.max(0.03, s0.el);
+  const d = azVec(s0.az, el).normalize();
   sun.position.copy(d).multiplyScalar(700 + SH); sun.target.position.set(0, 0, 0);
   su.sunPosition.value.copy(d);
   ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG', 'sunPosition'].forEach(k => skyCopy.material.uniforms[k].value = su[k].value);
-  const low = 1 - Math.min(1, el / 0.5);
+  const low = 1 - Math.min(1, Math.sin(el) / 0.5);
   sun.color.setHSL(0.09, 0.25 + low * 0.6, 0.95 - low * 0.2); sun.intensity = 1.2 + 1.8 * (1 - low);
   hemi.intensity = 0.12 + 0.18 * (1 - low);
   scene.fog.color.setHSL(0.1 - low * 0.03, 0.18 + low * 0.3, 0.78 - low * 0.12);
   clearTimeout(envTimer); envTimer = setTimeout(() => { if (envRT) envRT.dispose(); envRT = pmrem.fromScene(skyScene); scene.environment = envRT.texture; }, 60);
-  const hh = Math.floor(h), mm = Math.round((h - hh) * 60); $('sunOut').textContent = `${hh}:${String(mm).padStart(2, '0')}`;
+  $('sunOut').textContent = clock(h);
 }
-$('sun').oninput = e => setSun(+e.target.value); setSun(9.5);
+/* hour bar: one button per clock hour of daylight + Play (walks the sun through the day) */
+let playTimer = null;
+function renderHours() {
+  const cur = +$('sun').value, first = Math.ceil(RS.rise), last = Math.floor(RS.set);
+  let h = `<button class="play" id="hPlay" aria-pressed="${!!playTimer}">${playTimer ? 'Stop' : 'Play'}</button>`;
+  for (let k = 6; k <= 19; k++) h += `<button data-h="${k}" ${k < first || k > last ? 'disabled' : ''} aria-pressed="${Math.round(cur) === k && !playTimer}">${k > 12 ? k - 12 + 'pm' : k === 12 ? '12pm' : k + 'am'}</button>`;
+  $('hours').innerHTML = h;
+}
+function goHour(h) { $('sun').value = h; setSun(h); renderHours(); }
+function stopPlay() { clearInterval(playTimer); playTimer = null; renderHours(); }
+$('hours').onclick = e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.id === 'hPlay') {
+    if (playTimer) { stopPlay(); return; }
+    let h = Math.ceil(RS.rise * 4) / 4;
+    playTimer = setInterval(() => { if (h > RS.set) { stopPlay(); return; } $('sun').value = h; setSun(h); h += 0.25; }, 220);
+    renderHours(); return;
+  }
+  stopPlay(); goHour(+b.dataset.h);
+};
+$('sun').oninput = e => { if (playTimer) stopPlay(); setSun(+e.target.value); renderHours(); };
+function applyDay(v) {
+  setDay(v); $('doy').value = DOY; $('doyOut').textContent = doyLabel(DOY);
+  document.querySelectorAll('#seasons [data-d]').forEach(b => b.setAttribute('aria-pressed', typeof v === 'string' && b.dataset.d === v));
+  buildGuide(); const h = Math.min(+$('sun').max, Math.max(+$('sun').min, +$('sun').value)); $('sun').value = h; setSun(h); renderHours();
+}
+let yearTimer = null;
+function stopYear() { clearInterval(yearTimer); yearTimer = null; $('yPlay').textContent = 'Play year'; $('yPlay').setAttribute('aria-pressed', false); }
+$('seasons').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'yPlay') {
+    if (yearTimer) { stopYear(); return; }
+    let n = DOY; $('yPlay').textContent = 'Stop'; $('yPlay').setAttribute('aria-pressed', true);
+    yearTimer = setInterval(() => { n = n % 365 + 4; applyDay(n); }, 160); return;
+  }
+  stopYear(); applyDay(b.dataset.d);
+};
+$('doy').oninput = e => { stopYear(); applyDay(+e.target.value); };
+applyDay('today'); setSun(9.5); $('sun').value = 9.5; renderHours();
 
 /* ---------- stats ---------- */
 $('sAcres').textContent = (F.area / 4046.86).toFixed(1);
@@ -739,6 +857,8 @@ renderer.setAnimationLoop(now => {
   waterNormal.offset.set(now * 0.00001, now * 0.000006);
   TAGS.forEach(([tg, x, z]) => { V.set(x, 14, z).project(camera); const show = V.z < 1 && Math.abs(V.x) < 1.1 && Math.abs(V.y) < 1.1 && camera.position.y > 12;
     tg.hidden = !show; if (show) tg.style.transform = `translate(${(V.x + 1) / 2 * innerWidth}px, ${(1 - V.y) / 2 * innerHeight}px) translate(-50%, -100%)`; });
+  [[$('riseTag'), RS.riseAz], [$('setTag'), RS.setAz]].forEach(([el, az]) => { const v = azVec(az).multiplyScalar(SR * 0.45); V.set(SC[0] + v.x, 26, SC[1] + v.z).project(camera);
+    const show = V.z < 1 && Math.abs(V.x) < 1.05 && Math.abs(V.y) < 1.05; el.hidden = !show; if (show) el.style.transform = `translate(${(V.x + 1) / 2 * innerWidth}px, ${(1 - V.y) / 2 * innerHeight}px) translate(-50%, -100%)`; });
   camera.getWorldDirection(dir); needle.style.transform = `rotate(${Math.atan2(dir.x, -dir.z) * -180 / Math.PI}deg)`;
   renderer.render(scene, camera);
 });

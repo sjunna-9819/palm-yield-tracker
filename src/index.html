@@ -26,27 +26,36 @@
 
   <main class="gut">
     <!-- Count -->
-    <section data-view="count">
-      <div class="panel opener">
-        <button class="btn fruit continue" id="continueBtn" hidden></button>
-        <div class="round" id="round"></div>
-        <h2 data-t="openPalm" style="margin-top:6px"></h2>
+    <section data-view="count" class="walk">
+      <div class="round" id="round"></div>
+      <div class="walk-map-wrap" id="walkMapWrap" hidden>
+        <div id="walkMap" class="walk-map"></div>
+        <button class="map-fab" id="walkCenter" aria-label="Centre on me"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+      </div>
+      <div class="next-card" id="nextCard" hidden>
+        <div class="nc-gps" id="ncGps"></div>
+        <div class="nc-row"><div class="nc-id" id="ncId"></div><span class="nc-st" id="ncSt"></span></div>
+        <div class="nc-sub" id="ncSub"></div>
+        <button class="btn go big" id="ncOpen" data-t="walkCount"></button>
+      </div>
+      <button class="btn fruit continue" id="continueBtn" hidden></button>
+      <div class="walk-actions">
+        <button class="btn big" id="scanBtn"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8V4h4M17 4h4v4M21 16v4h-4M7 20H3v-4M7 12h10"/></svg><span data-t="scanBtn"></span></button>
+        <button class="btn big" id="typeBtn" aria-expanded="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg><span data-t="walkType"></span></button>
+      </div>
+      <div class="panel opener" id="typePanel" hidden>
         <div class="blocktabs" id="openBlocks"></div>
         <div class="numdisp" aria-live="polite"><span id="numBlock">B01</span><span class="dash">-</span><b id="numVal"></b><span class="of" id="numOf"></span></div>
         <div class="keypad" id="keypad">
           <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
           <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
           <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
-          <button data-k="del" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="go" class="go" id="kGo" data-t="openBtn"></button>
+          <button data-k="del" aria-label="Delete">&#9003;</button><button data-k="0">0</button><button data-k="go" class="go" id="kGo" data-t="openBtn"></button>
         </div>
-        <button class="btn go" id="scanBtn" style="width:100%"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8V4h4M17 4h4v4M21 16v4h-4M7 20H3v-4M7 12h10"/></svg><span data-t="scanBtn"></span></button>
-        <div class="hint" data-t="scanHint"></div>
-        <button class="btn" id="nearBtn" style="width:100%"></button>
-        <div id="nearOut" class="near" hidden>
-          <div class="hint" id="nearStat"></div>
-          <div class="hint" id="nearHead" data-t="nearClose" hidden></div>
-          <div class="nearlist" id="nearList"></div>
-        </div>
+      </div>
+      <div hidden>
+        <button id="nearBtn"></button>
+        <div id="nearOut"><div id="nearStat"></div><div id="nearHead"></div><div id="nearList"></div></div>
       </div>
     </section>
     <section data-view="count" class="panel">
@@ -362,28 +371,27 @@
       <button class="nav" id="pNext" aria-label="Next palm">›</button>
       <button class="close" id="pClose" aria-label="Close">×</button>
     </div>
-    <div class="panel">
-      <h2 data-t="gpsTitle"></h2>
-      <div class="hint" id="pGps" style="margin-bottom:10px"></div>
-      <button class="btn go" id="pGpsBtn" style="width:100%" data-t="gpsBtn"></button>
+    <div class="sh-meta">
+      <label class="mo"><input type="month" id="pMonth" aria-label="Month"></label>
+      <div class="total"><span data-t="onPalm"></span><b id="pTotal">0</b></div>
     </div>
-    <div class="form2">
-      <label class="field"><span data-t="month"></span><input type="month" id="pMonth"></label>
-      <div class="total" style="align-self:end;padding-bottom:6px"><span data-t="onPalm"></span><b id="pTotal">0</b></div>
-    </div>
-    <div class="hint" data-t="tapPic"></div>
     <div class="stages" id="pStages"></div>
     <button class="malerow" id="pMale" aria-pressed="false"><img class="art" src="img/male.jpg" alt=""><span class="txt"><b data-t="s_male"></b><br><span class="hint" data-t="d_male_s"></span></span><span class="sw"></span></button>
     <div class="hint" id="pExisting"></div>
-    <div class="panel">
-      <h2 data-t="palmStatus"></h2>
+    <details class="fold" id="pProbFold">
+      <summary><span data-t="palmStatus"></span><span class="fold-n" id="pProbN"></span></summary>
       <div class="flags" id="pFlags"></div>
       <label class="field" style="margin-top:12px"><span data-t="note"></span><textarea id="pNote"></textarea></label>
-    </div>
-    <div class="panel">
-      <h2 data-t="history"></h2>
+    </details>
+    <details class="fold">
+      <summary><span data-t="gpsTitle"></span><span class="fold-n" id="pGpsMini"></span></summary>
+      <div class="hint" id="pGps" style="margin-bottom:10px"></div>
+      <button class="btn" id="pGpsBtn" style="width:100%" data-t="gpsBtn"></button>
+    </details>
+    <details class="fold">
+      <summary><span data-t="history"></span></summary>
       <ul class="rows" id="pHist"></ul>
-    </div>
+    </details>
     <div class="savebar">
       <button class="btn go" id="pSave" data-t="save"></button>
       <button class="btn fruit" id="pSaveNext" data-t="saveNext"></button>

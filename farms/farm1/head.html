@@ -41,6 +41,20 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
   border-radius: 50%; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; }
 .compass svg { width: 34px; height: 34px; }
 #loading[hidden] { display: none; }
+.hours { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+.hours::-webkit-scrollbar { display: none; }
+.hours button { flex: none; min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: inherit; font: 600 14px var(--f-display); cursor: pointer; }
+.hours button[aria-pressed="true"] { background: #f5a623; border-color: #f5a623; color: #1b1b1b; }
+.hours button:disabled { opacity: .3; cursor: default; }
+.hours .play { min-width: 48px; background: rgba(245,166,35,.18); border-color: #f5a623; }
+.sunline { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; font-weight: 600; margin-top: 8px; }
+.sunline span { display: inline-flex; align-items: center; gap: 6px; }
+.sunline i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.sunline .rise i { background: #f5a623; } .sunline .set i { background: #c2477a; }
+.suntag { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 15px var(--f-display); color: #1b1b1b; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
+.suntag.rise { background: #f5a623; } .suntag.set { background: #c2477a; color: #fff; }
+.seasons button { min-width: 0; padding: 0 10px; }
+.sunyear { font-size: 13px; line-height: 1.45; opacity: .9; }
 .tag3d { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 20px var(--f-display); letter-spacing: .04em; color: #fff; background: rgba(29, 42, 31, .82); padding: 4px 12px; border-radius: 8px; white-space: nowrap; }
 .tag3d::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 0; border-top-color: rgba(29, 42, 31, .82); }
 #loading { position: fixed; inset: 0; display: grid; place-items: center; font: 600 16px var(--f-body); color: var(--muted); pointer-events: none; }
@@ -54,6 +68,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
 .back { font: 600 13px var(--f-body); color: var(--accent); text-decoration: none; margin-right: 10px; }
 </style>
 <div id="stage"></div>
+<div class="suntag rise" id="riseTag" hidden></div><div class="suntag set" id="setTag" hidden></div>
 <div class="tag3d" id="tag3d" hidden>Farm 1</div>
 <div id="loading">Loading the farm…</div>
 <section class="card" id="card" aria-label="Farm details">
@@ -64,8 +79,13 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
     <div><b id="sPalms">605</b><span>palms seen</span></div>
     <div><b id="sPer">300 m</b><span>long side</span></div>
   </div>
+  <div class="sunline" id="sunline"></div>
+  <div class="hours" id="hours" role="group" aria-label="Hour of day"></div>
   <div class="more" style="display:flex;flex-direction:column;gap:10px">
     <label class="row" for="sun">Sun <input type="range" id="sun" min="6" max="18" step="0.25" value="9.5"><output id="sunOut">9:30</output></label>
+    <label class="row" for="doy">Date <input type="range" id="doy" min="1" max="365" step="1" value="180"><output id="doyOut"></output></label>
+    <div class="hours seasons" id="seasons"><button data-d="today">Today</button><button data-d="06-21">21 Jun</button><button data-d="09-22">22 Sep</button><button data-d="12-21">21 Dec</button><button class="play" id="yPlay">Play year</button></div>
+    <div class="sunyear" id="sunyear"></div>
     <div class="chips">
       <button class="chip" id="tFence" aria-pressed="true">Boundary</button>
       <button class="chip" id="tBunch" aria-pressed="true">Bunches</button>
