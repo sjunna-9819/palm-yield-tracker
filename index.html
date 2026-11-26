@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Palm Farm">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
-  <script type="module" crossorigin src="./assets/index-C1w5SdbO.js"></script>
+  <script type="module" crossorigin src="./assets/index-Cxdhb5TZ.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-WkwZ5CU-.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-CvBjXvZ5.css">
+  <link rel="stylesheet" crossorigin href="./assets/index-miLWVUID.css">
 </head>
 <body>
 
@@ -87,6 +87,14 @@
     </section>
 
     <!-- Palms -->
+    <section data-view="palms" class="panel" hidden>
+      <h2 data-t="satTitle"></h2>
+      <div class="blocktabs" id="satPlaces"></div>
+      <div id="satMap" class="sat-map"></div>
+      <div class="hint" id="satHint"></div>
+      <button class="btn" id="satCsv" data-t="satCsv" style="margin-top:8px"></button>
+      <input type="file" id="satFile" accept=".csv,text/csv" hidden>
+    </section>
     <section data-view="palms" class="panel" hidden>
       <h2 data-t="palmMap"></h2>
       <div class="blocktabs" id="mapBlocks"></div>
