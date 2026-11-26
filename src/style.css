@@ -328,3 +328,7 @@ table.setup input { width: 100%; min-width: 56px; box-sizing: border-box; height
 .tg-list button { min-width: 33px; height: 34px; padding: 0 3px; border-radius: 8px; background: var(--h0); font-family: var(--f-num); font-weight: 600; font-size: 13px; color: var(--ink); }
 .tg-list button.on { background: var(--ok); color: var(--leaf-ink); }
 .tg-list button.cur { outline: 3px solid var(--fruit); outline-offset: 1px; }
+
+/* satellite map (Palms tab) */
+.sat-map { height: 62vh; min-height: 320px; border-radius: 12px; overflow: hidden; background: #1d2a20; margin-top: 8px; }
+.sat-pin span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #f2c230; color: #1b1b1b; border: 2px solid #fff; font: 600 11px/1 'Barlow Condensed', sans-serif; cursor: pointer; }

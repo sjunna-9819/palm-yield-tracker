@@ -5,6 +5,7 @@ import '@fontsource/mandali/400.css';
 import qrcode from 'qrcode-generator';
 import { jsPDF } from 'jspdf';
 import { claude, scanTag, getLocation, watchLocation, localData, isShared, uploadLocal } from './platform.js';
+import { drawSatMap, resizeSatMap } from './satmap.js';
 import { initSurvey, showSurvey, refreshBlocks, averageGps } from './survey.js';
 (() => {
 const $ = id => document.getElementById(id);
@@ -26,7 +27,7 @@ const STAGES = [
 const T = {
  en: {
   guideBtn:'Guide', openPalm:'Open a palm', block:'Block', openBtn:'Open palm',
-  scanHint:'Or tap Scan tag and point the camera at the QR code on the palm.', scanBtn:'Scan tag', scanNone:'No palm tag found in that code.', gpsTitle:'Location', gpsBtn:'Save GPS here', gpsWorking:'Getting GPS… ±{0} m', gpsNone:'No GPS saved yet. Stand at the trunk and tap Save GPS here.', gpsSaved:'GPS saved ±{0} m ({1})', gpsFail:'Could not get GPS. Turn on location and try in the open.', gpsCount:'GPS saved for {0} of {1} palms', gpsExport:'Export GPS (CSV)', gpsImprove:'Add another GPS reading here', gpsSavedN:'GPS saved ±{0} m from {2} readings ({1})', gpsFar:'This reading is {0} m from the saved spot, so it was not added. Check the tag number. Tap again to replace the saved spot.', gpsReplaced:'Saved spot replaced.', nearBtn:'Find palm by GPS', nearStop:'Stop GPS find', nearWait:'Getting GPS…', nearNone:'No palms have GPS yet. Stand at a palm and scan its tag once: its spot is saved when you save the count.', nearAcc:'GPS ±{0} m', nearClose:'Nearest palms. Walk within 2.5 m (8 ft) and the palm opens by itself:', nearWeak:'GPS is ±{0} m here, too weak to pick a palm by itself. Tap the palm below or scan its tag.', nearOpened:'{0} opened by GPS ({1} m away)', pendingSync:'Saved on this phone. Will sync when there is signal.', syncErr:'A save was rejected by the server. Check your access.',
+  scanHint:'Or tap Scan tag and point the camera at the QR code on the palm.', scanBtn:'Scan tag', scanNone:'No palm tag found in that code.', gpsTitle:'Location', gpsBtn:'Save GPS here', gpsWorking:'Getting GPS… ±{0} m', gpsNone:'No GPS saved yet. Stand at the trunk and tap Save GPS here.', gpsSaved:'GPS saved ±{0} m ({1})', gpsFail:'Could not get GPS. Turn on location and try in the open.', gpsCount:'GPS saved for {0} of {1} palms', gpsExport:'Export GPS (CSV)', satTitle:'Satellite map', satCsv:'Show a GPS file (CSV) on the map', satHint:'{0} palms with GPS. Yellow dot = palm number, white ring = GPS accuracy. Tap a dot to open the palm.', satNone:'No palms have GPS yet. Tag palms on the Tag palms screen, or show a GPS file.', satPlace:'Location {0} ({1})', satLoaded:'{0} points from the file shown on the map (not saved).', satBad:'Could not read that file. Use the palm-gps.csv exported from this app.', gpsImprove:'Add another GPS reading here', gpsSavedN:'GPS saved ±{0} m from {2} readings ({1})', gpsFar:'This reading is {0} m from the saved spot, so it was not added. Check the tag number. Tap again to replace the saved spot.', gpsReplaced:'Saved spot replaced.', nearBtn:'Find palm by GPS', nearStop:'Stop GPS find', nearWait:'Getting GPS…', nearNone:'No palms have GPS yet. Stand at a palm and scan its tag once: its spot is saved when you save the count.', nearAcc:'GPS ±{0} m', nearClose:'Nearest palms. Walk within 2.5 m (8 ft) and the palm opens by itself:', nearWeak:'GPS is ±{0} m here, too weak to pick a palm by itself. Tap the palm below or scan its tag.', nearOpened:'{0} opened by GPS ({1} m away)', pendingSync:'Saved on this phone. Will sync when there is signal.', syncErr:'A save was rejected by the server. Check your access.',
   countedToday:'Counted today', thisMonth:'This month', forecast:'Bunches coming (estimate)',
   fcNote:'Based on the latest count of each palm. Stage timings vary with season, water and palm age.',
   stagesByMonth:'Bunches on palms, by month', ovTitle:'Overripe bunches seen', ovHint:'These palms had overripe or rotten bunches. The harvest round is running late there.',
@@ -106,7 +107,7 @@ const T = {
  },
  te: {
   guideBtn:'గైడ్', openPalm:'చెట్టును తెరవండి', block:'బ్లాక్', openBtn:'చెట్టు తెరువు',
-  scanHint:'లేదా "ట్యాగ్ స్కాన్" నొక్కి చెట్టు మీది QR కోడ్ వైపు కెమెరా చూపించండి.', scanBtn:'ట్యాగ్ స్కాన్', scanNone:'ఆ కోడ్‌లో చెట్టు ట్యాగ్ లేదు.', gpsTitle:'స్థానం', gpsBtn:'ఇక్కడ GPS సేవ్ చేయి', gpsWorking:'GPS తీసుకుంటోంది… ±{0} మీ', gpsNone:'ఇంకా GPS సేవ్ కాలేదు. కాండం దగ్గర నిలబడి "ఇక్కడ GPS సేవ్ చేయి" నొక్కండి.', gpsSaved:'GPS సేవ్ అయింది ±{0} మీ ({1})', gpsFail:'GPS రాలేదు. లొకేషన్ ఆన్ చేసి ఖాళీ ప్రదేశంలో ప్రయత్నించండి.', gpsCount:'{1} లో {0} చెట్లకు GPS ఉంది', gpsExport:'GPS ఎగుమతి (CSV)', gpsImprove:'ఇక్కడ మరో GPS రీడింగ్ జోడించు', gpsSavedN:'GPS సేవ్ అయింది ±{0} మీ, {2} రీడింగ్‌లు ({1})', gpsFar:'ఈ రీడింగ్ సేవ్ అయిన స్థానానికి {0} మీ దూరంలో ఉంది, జోడించలేదు. ట్యాగ్ నంబర్ చూడండి. స్థానం మార్చాలంటే మళ్ళీ నొక్కండి.', gpsReplaced:'సేవ్ అయిన స్థానం మార్చబడింది.', nearBtn:'GPS తో చెట్టు కనుగొను', nearStop:'GPS వెతుకుట ఆపు', nearWait:'GPS తీసుకుంటోంది…', nearNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. చెట్టు దగ్గర నిలబడి దాని ట్యాగ్ ఒకసారి స్కాన్ చేయండి: లెక్క సేవ్ చేసినప్పుడు స్థానం సేవ్ అవుతుంది.', nearAcc:'GPS ±{0} మీ', nearClose:'దగ్గరి చెట్లు. 2.5 మీ (8 అడుగులు) లోపలికి వెళ్తే చెట్టు తానే తెరుచుకుంటుంది:', nearWeak:'ఇక్కడ GPS ±{0} మీ, చెట్టును తానే ఎంచడానికి బలహీనంగా ఉంది. కింద చెట్టును నొక్కండి లేదా ట్యాగ్ స్కాన్ చేయండి.', nearOpened:'{0} GPS తో తెరుచుకుంది ({1} మీ దూరం)', pendingSync:'ఈ ఫోన్‌లో సేవ్ అయింది. సిగ్నల్ రాగానే సింక్ అవుతుంది.', syncErr:'ఒక సేవ్‌ను సర్వర్ తిరస్కరించింది. మీ యాక్సెస్ చూడండి.',
+  scanHint:'లేదా "ట్యాగ్ స్కాన్" నొక్కి చెట్టు మీది QR కోడ్ వైపు కెమెరా చూపించండి.', scanBtn:'ట్యాగ్ స్కాన్', scanNone:'ఆ కోడ్‌లో చెట్టు ట్యాగ్ లేదు.', gpsTitle:'స్థానం', gpsBtn:'ఇక్కడ GPS సేవ్ చేయి', gpsWorking:'GPS తీసుకుంటోంది… ±{0} మీ', gpsNone:'ఇంకా GPS సేవ్ కాలేదు. కాండం దగ్గర నిలబడి "ఇక్కడ GPS సేవ్ చేయి" నొక్కండి.', gpsSaved:'GPS సేవ్ అయింది ±{0} మీ ({1})', gpsFail:'GPS రాలేదు. లొకేషన్ ఆన్ చేసి ఖాళీ ప్రదేశంలో ప్రయత్నించండి.', gpsCount:'{1} లో {0} చెట్లకు GPS ఉంది', gpsExport:'GPS ఎగుమతి (CSV)', satTitle:'ఉపగ్రహ పటం', satCsv:'GPS ఫైల్ (CSV) పటంలో చూపించు', satHint:'GPS ఉన్న చెట్లు {0}. పసుపు చుక్క = చెట్టు నంబర్, తెల్ల వలయం = GPS ఖచ్చితత్వం. చుక్కను తట్టి చెట్టు తెరవండి.', satNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. ట్యాగ్ స్క్రీన్‌లో చెట్లకు GPS పెట్టండి, లేదా GPS ఫైల్ చూపించండి.', satPlace:'స్థలం {0} ({1})', satLoaded:'ఫైల్ నుండి {0} పాయింట్లు పటంలో చూపించాం (సేవ్ కాలేదు).', satBad:'ఆ ఫైల్ చదవలేకపోయాం. ఈ యాప్ నుండి ఎగుమతి చేసిన palm-gps.csv వాడండి.', gpsImprove:'ఇక్కడ మరో GPS రీడింగ్ జోడించు', gpsSavedN:'GPS సేవ్ అయింది ±{0} మీ, {2} రీడింగ్‌లు ({1})', gpsFar:'ఈ రీడింగ్ సేవ్ అయిన స్థానానికి {0} మీ దూరంలో ఉంది, జోడించలేదు. ట్యాగ్ నంబర్ చూడండి. స్థానం మార్చాలంటే మళ్ళీ నొక్కండి.', gpsReplaced:'సేవ్ అయిన స్థానం మార్చబడింది.', nearBtn:'GPS తో చెట్టు కనుగొను', nearStop:'GPS వెతుకుట ఆపు', nearWait:'GPS తీసుకుంటోంది…', nearNone:'ఇంకా ఏ చెట్టుకూ GPS లేదు. చెట్టు దగ్గర నిలబడి దాని ట్యాగ్ ఒకసారి స్కాన్ చేయండి: లెక్క సేవ్ చేసినప్పుడు స్థానం సేవ్ అవుతుంది.', nearAcc:'GPS ±{0} మీ', nearClose:'దగ్గరి చెట్లు. 2.5 మీ (8 అడుగులు) లోపలికి వెళ్తే చెట్టు తానే తెరుచుకుంటుంది:', nearWeak:'ఇక్కడ GPS ±{0} మీ, చెట్టును తానే ఎంచడానికి బలహీనంగా ఉంది. కింద చెట్టును నొక్కండి లేదా ట్యాగ్ స్కాన్ చేయండి.', nearOpened:'{0} GPS తో తెరుచుకుంది ({1} మీ దూరం)', pendingSync:'ఈ ఫోన్‌లో సేవ్ అయింది. సిగ్నల్ రాగానే సింక్ అవుతుంది.', syncErr:'ఒక సేవ్‌ను సర్వర్ తిరస్కరించింది. మీ యాక్సెస్ చూడండి.',
   countedToday:'ఈ రోజు లెక్కించినవి', thisMonth:'ఈ నెల', forecast:'రాబోయే గెలలు (అంచనా)',
   fcNote:'ప్రతి చెట్టు చివరి లెక్క ఆధారంగా. దశల సమయం కాలం, నీరు, చెట్టు వయసును బట్టి మారుతుంది.',
   stagesByMonth:'చెట్ల మీద గెలలు, నెలవారీగా', ovTitle:'అతిగా పండిన గెలలు కనిపించినవి', ovHint:'ఈ చెట్లకు అతిగా పండిన లేదా కుళ్ళిన గెలలు ఉన్నాయి. అక్కడ కోత ఆలస్యమవుతోంది.',
@@ -415,6 +416,7 @@ function setTab(name, push = true) {
   $('helpBtn').setAttribute('aria-pressed', name === 'guide');
   if (push && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo(0, 0);
+  if (name === 'palms') renderSat();
 }
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 $('helpBtn').onclick = () => setTab(tab === 'guide' ? 'count' : 'guide');
@@ -501,7 +503,7 @@ function renderAll() {
   const nc = []; for (const b of blocks()) for (let i = 1; i <= (+b.palms || 0); i++) { const id = palmId(b.id, i); if (!M.latest[id] || M.latest[id].m !== M.mo) nc.push(id); }
   $('ncList').innerHTML = nc.length ? `<li><span class="grow">${esc(t('roundOf', nf(nc.length), nf(M.totalPalms)))}</span></li>` + nc.slice(0, 40).map(id => `<li><button class="id" data-open="${id}">${id}</button></li>`).join('') : `<li class="empty">${esc(t('allCounted'))}</li>`;
   { let g = 0; for (const p of Object.values(S.palms)) if (p && p.loc) g++; $('gpsCount').textContent = t('gpsCount', nf(g), nf(M.totalPalms)); }
-  renderChart(M); renderMap(M); renderTickets(); renderSetup();
+  renderChart(M); renderMap(M); renderSat(); renderTickets(); renderSetup();
   if (!$('sheet').hidden && curPalm) renderPalm();
 }
 function renderChart(M) {
@@ -828,6 +830,30 @@ $('pHist').addEventListener('click', async e => {
   const m = b.dataset.delm;
   try { await writePalm(curPalm, body => { delete body.c[m]; }); if ($('pMonth').value === m) loadEntry(false); } catch { toast(t('saveFailed')); }
 });
+
+/* ---------- satellite map ---------- */
+let satExtra = [];   // points from a CSV file, shown only (never saved)
+function renderSat() {
+  if (tab !== 'palms') return;
+  const pts = [], seen = new Set();
+  for (const [id, p] of Object.entries(S.palms)) if (p && p.loc && Number.isFinite(p.loc.lat)) { const pr = parseId(id); pts.push({ id, n: pr ? pr.n : id, lat: p.loc.lat, lng: p.loc.lng, acc: p.loc.acc }); seen.add(id); }
+  for (const q of satExtra) if (!seen.has(q.id)) pts.push(q);
+  $('satHint').textContent = pts.length ? t('satHint', nf(pts.length)) : t('satNone');
+  try { drawSatMap($('satMap'), $('satPlaces'), pts, { open: id => openPalm(id), label: (i, n) => esc(t('satPlace', i, nf(n))) }); } catch {}
+}
+$('satCsv').onclick = () => $('satFile').click();
+$('satFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const lines = (await f.text()).trim().split(/\r?\n/), h = lines.shift().split(',');
+    const ix = k => h.indexOf(k), iId = ix('palm_id'), iN = ix('number'), iLa = ix('lat'), iLo = ix('lng'), iA = ix('accuracy_m');
+    if (iLa < 0 || iLo < 0) throw 0;
+    satExtra = lines.map(l => l.split(',')).map((c, k) => ({ id: c[iId] || 'P' + (k + 1), n: c[iN] || k + 1, lat: +c[iLa], lng: +c[iLo], acc: +c[iA] || 0 })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+    if (!satExtra.length) throw 0;
+    renderSat(); toast(t('satLoaded', nf(satExtra.length)));
+  } catch { toast(t('satBad')); }
+};
+window.addEventListener('resize', resizeSatMap);
 
 /* ---------- global clicks, tickets ---------- */
 document.addEventListener('click', e => {

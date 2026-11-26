@@ -85,6 +85,14 @@
 
     <!-- Palms -->
     <section data-view="palms" class="panel" hidden>
+      <h2 data-t="satTitle"></h2>
+      <div class="blocktabs" id="satPlaces"></div>
+      <div id="satMap" class="sat-map"></div>
+      <div class="hint" id="satHint"></div>
+      <button class="btn" id="satCsv" data-t="satCsv" style="margin-top:8px"></button>
+      <input type="file" id="satFile" accept=".csv,text/csv" hidden>
+    </section>
+    <section data-view="palms" class="panel" hidden>
       <h2 data-t="palmMap"></h2>
       <div class="blocktabs" id="mapBlocks"></div>
       <div class="blocktabs" id="mapFilters"></div>
