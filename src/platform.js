@@ -1,7 +1,7 @@
 /* Native platform layer: replaces the claude.ai runtime (db / user / downloads) with
    Firebase Firestore (offline cache) + anonymous sign-in + PIN join, and adds QR scan + GPS. */
 import { initializeApp } from 'firebase/app';
-import { initializeFirestore, persistentLocalCache, doc, collection, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, doc, collection, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch, getCountFromServer, query, where } from 'firebase/firestore';
 import { initializeAuth, indexedDBLocalPersistence, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -15,7 +15,26 @@ let fs = null, auth = null, uid = null, role = null;
 
 /* A Firestore write resolves only when the server confirms it. In the field there may be no signal,
    so we return as soon as the write is in the phone's cache and report server rejections separately. */
-const soon = p => { p.catch(e => window.dispatchEvent(new CustomEvent('pbr:syncerror', { detail: e && e.code }))); return Promise.race([p, new Promise(r => setTimeout(r, 350))]); };
+/* Sync state for the top-bar light: writes still waiting for the server, the last refusal, online or not. */
+const pendingN = {}; let lastErr = null;
+export function syncState() {
+  return { shared: configured, pending: Object.values(pendingN).reduce((a, b) => a + b, 0), err: lastErr, online: navigator.onLine };
+}
+const emitSync = () => window.dispatchEvent(new CustomEvent('pbr:sync', { detail: syncState() }));
+export function clearSyncError() { lastErr = null; emitSync(); }
+window.addEventListener('online', emitSync); window.addEventListener('offline', emitSync);
+const soon = p => {
+  p.then(() => { if (lastErr) { lastErr = null; emitSync(); } },
+         e => { lastErr = (e && e.code) || 'unknown'; emitSync(); window.dispatchEvent(new CustomEvent('pbr:syncerror', { detail: lastErr })); });
+  return Promise.race([p, new Promise(r => setTimeout(r, 350))]);
+};
+/* What the server itself holds (not this phone's copy). Needs signal. */
+export async function serverCounts() {
+  if (!configured || !fs) return null;
+  const c = collection(fs, 'palms');
+  const [a, b] = await Promise.all([getCountFromServer(c), getCountFromServer(query(c, where('loc.lat', '>=', -90)))]);
+  return { palms: a.data().count, gps: b.data().count };
+}
 function docApi(path) {
   const r = doc(fs, path);
   return {
@@ -30,7 +49,8 @@ function colApi(path) {
     doc: id => docApi(path + '/' + id),
     add: d => soon(setDoc(doc(r), d)),
     onSnapshot: (cb, err) => onSnapshot(r, { includeMetadataChanges: true }, s => {
-      if (path === 'palms' || path === 'tickets') window.dispatchEvent(new CustomEvent('pbr:pending', { detail: { path, pending: s.metadata.hasPendingWrites } }));
+      const n = s.docs.reduce((a, d) => a + (d.metadata.hasPendingWrites ? 1 : 0), 0);
+      if (pendingN[path] !== n) { pendingN[path] = n; emitSync(); }
       cb({ docs: s.docs.map(d => ({ id: d.id, data: () => d.data() })), metadata: s.metadata });
     }, err)
   };
@@ -72,7 +92,8 @@ export async function uploadLocal() {
   for (let i = 0; i < keys.length; i += 400) {
     const b = writeBatch(fs);
     keys.slice(i, i + 400).forEach(k => b.set(doc(fs, k), all[k]));
-    await b.commit();
+    // commit resolves only when the server accepts it; give up after 60 s so the phone can say so
+    await Promise.race([b.commit(), new Promise((_, rej) => setTimeout(() => rej({ code: 'no-signal' }), 60000))]);
   }
   return keys.length;
 }

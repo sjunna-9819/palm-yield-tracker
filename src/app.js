@@ -4,7 +4,7 @@ import '@fontsource/barlow-condensed/500.css'; import '@fontsource/barlow-conden
 import '@fontsource/mandali/400.css';
 import qrcode from 'qrcode-generator';
 import { jsPDF } from 'jspdf';
-import { claude, scanTag, getLocation, watchLocation, localData, isShared, uploadLocal } from './platform.js';
+import { claude, scanTag, getLocation, watchLocation, localData, isShared, uploadLocal, syncState, clearSyncError, serverCounts } from './platform.js';
 import { drawSatMap, resizeSatMap } from './satmap.js';
 import { initSurvey, showSurvey, refreshBlocks, averageGps } from './survey.js';
 (() => {
@@ -58,7 +58,7 @@ const T = {
   dataTitle:'Data and backup', dataExport:'Export all data (JSON)', dataImport:'Import data file', dataUpload:'Copy this phone\'s data to the farm database',
   dataLocal:'Phone-only mode: data is saved on this phone. Export a backup now and then. Add Firebase (SETUP.md) to share between phones.', dataShared:'Shared mode: every phone that joined the farm sees the same data.',
   dataAsk:'Load {0} palms, {1} mill tickets and the farm setup from this file? Records with the same ID are replaced.', dataLoaded:'Loaded {0} records.', dataBad:'That file is not a farm data backup.',
-  dataUpAsk:'Copy {0} records from this phone to the farm database?', dataUploaded:'Copied {0} records.', yes:'Yes',
+  syLocal:'This phone only', syOk:'Synced', syWait:'{0} waiting for signal', sySend:'Sending {0}…', syOffline:'Offline', syErr:'Not saved to farm', syInfoOk:'Everything on this phone is saved to the farm database.', syInfoWait:'{0} saves are on this phone and will go to the farm database when there is signal. Keep the app open for a moment when you have signal.', syInfoOffline:'No signal now. Saves stay on this phone and go to the farm database later.', syInfoErr:'The farm database refused a save ({0}). Open that palm and save it again. If it keeps happening, tell the farm owner.', syInfoLocal:'This app is not connected to a farm database. Data stays on this phone only.', dbCount:'Farm database now holds {0} palms, {1} with GPS.', dbCountWait:'Checking the farm database…', dbCountFail:'Could not reach the farm database. Check signal.', ok:'OK', upFailed:'Copy failed ({0}). Nothing was copied. Check signal and try again.', dataUpAsk:'Copy {0} records from this phone to the farm database?', dataUploaded:'Copied {0} records.', yes:'Yes',
   layoutTitle:'Field layout', layoutHint:'Enter how many palms are in each row, in walking order. Palm numbers then run row by row: row 1 first, then row 2, and so on. Or load the backup file from the Palm Yield Tracker to use the real GPS positions. Tap Save setup after.',
   layRows:'Palms in each row, separated by commas', layDiamond:'Diamond planting (every other row shifted half a palm)', layImport:'Load from Palm Yield Tracker backup', layClear:'Clear layout',
   layNone:'No field layout for this block yet: palms are shown in number order.', layInfo:'{0} rows, {1} palms{2}.', layGps:', GPS positions', layMismatch:'Rows add up to {0} palms but the block has {1}. Saving sets the block to {0}.',
@@ -138,7 +138,7 @@ const T = {
   dataTitle:'డేటా మరియు బ్యాకప్', dataExport:'మొత్తం డేటా ఎగుమతి (JSON)', dataImport:'డేటా ఫైల్ దిగుమతి', dataUpload:'ఈ ఫోన్ డేటాను తోట డేటాబేస్‌కు కాపీ చేయి',
   dataLocal:'ఫోన్ మాత్రమే: డేటా ఈ ఫోన్‌లోనే ఉంటుంది. అప్పుడప్పుడు బ్యాకప్ ఎగుమతి చేయండి. ఫోన్ల మధ్య పంచుకోవడానికి Firebase జోడించండి (SETUP.md).', dataShared:'పంచుకునే విధానం: తోటలో చేరిన ప్రతి ఫోన్‌కు ఒకే డేటా కనిపిస్తుంది.',
   dataAsk:'ఈ ఫైల్ నుండి {0} చెట్లు, {1} మిల్ టికెట్లు, తోట సెటప్ లోడ్ చేయాలా? ఒకే ID ఉన్నవి మారతాయి.', dataLoaded:'{0} రికార్డులు లోడ్ అయ్యాయి.', dataBad:'ఇది తోట డేటా బ్యాకప్ కాదు.',
-  dataUpAsk:'ఈ ఫోన్ నుండి {0} రికార్డులు తోట డేటాబేస్‌కు కాపీ చేయాలా?', dataUploaded:'{0} రికార్డులు కాపీ అయ్యాయి.', yes:'అవును',
+  syLocal:'ఈ ఫోన్ మాత్రమే', syOk:'సింక్ అయింది', syWait:'{0} సిగ్నల్ కోసం వేచి ఉన్నాయి', sySend:'{0} పంపుతోంది…', syOffline:'సిగ్నల్ లేదు', syErr:'తోటకు సేవ్ కాలేదు', syInfoOk:'ఈ ఫోన్‌లోని అన్నీ తోట డేటాబేస్‌లో సేవ్ అయ్యాయి.', syInfoWait:'{0} సేవ్‌లు ఈ ఫోన్‌లో ఉన్నాయి, సిగ్నల్ రాగానే తోట డేటాబేస్‌కు వెళ్తాయి. సిగ్నల్ ఉన్నప్పుడు యాప్ కాసేపు తెరిచి ఉంచండి.', syInfoOffline:'ఇప్పుడు సిగ్నల్ లేదు. సేవ్‌లు ఈ ఫోన్‌లో ఉండి తర్వాత తోట డేటాబేస్‌కు వెళ్తాయి.', syInfoErr:'తోట డేటాబేస్ ఒక సేవ్‌ను తిరస్కరించింది ({0}). ఆ చెట్టును తెరిచి మళ్ళీ సేవ్ చేయండి. మళ్ళీ జరిగితే తోట యజమానికి చెప్పండి.', syInfoLocal:'ఈ యాప్ తోట డేటాబేస్‌కు కనెక్ట్ కాలేదు. డేటా ఈ ఫోన్‌లోనే ఉంటుంది.', dbCount:'తోట డేటాబేస్‌లో ఇప్పుడు {0} చెట్లు, {1} కి GPS ఉంది.', dbCountWait:'తోట డేటాబేస్ చూస్తోంది…', dbCountFail:'తోట డేటాబేస్ అందలేదు. సిగ్నల్ చూడండి.', ok:'సరే', upFailed:'కాపీ విఫలమైంది ({0}). ఏదీ కాపీ కాలేదు. సిగ్నల్ చూసి మళ్ళీ ప్రయత్నించండి.', dataUpAsk:'ఈ ఫోన్ నుండి {0} రికార్డులు తోట డేటాబేస్‌కు కాపీ చేయాలా?', dataUploaded:'{0} రికార్డులు కాపీ అయ్యాయి.', yes:'అవును',
   layoutTitle:'పొలం వరుసలు', layoutHint:'ప్రతి వరుసలో ఎన్ని చెట్లు ఉన్నాయో నడిచే క్రమంలో రాయండి. చెట్ల నంబర్లు వరుస 1 నుండి మొదలై వరుసగా వస్తాయి. లేదా Palm Yield Tracker బ్యాకప్ ఫైల్ లోడ్ చేస్తే అసలు GPS స్థానాలు వస్తాయి. తర్వాత సెటప్ సేవ్ చేయండి.',
   layRows:'ప్రతి వరుసలో చెట్లు, కామాలతో', layDiamond:'డైమండ్ పద్ధతి (ప్రతి రెండో వరుస సగం చెట్టు జరిగి ఉంటుంది)', layImport:'Palm Yield Tracker బ్యాకప్ లోడ్ చేయండి', layClear:'వరుసలు తీసివేయండి',
   layNone:'ఈ బ్లాక్‌కు ఇంకా వరుసలు లేవు: చెట్లు నంబర్ క్రమంలో చూపిస్తున్నాం.', layInfo:'{0} వరుసలు, {1} చెట్లు{2}.', layGps:', GPS స్థానాలు', layMismatch:'వరుసల మొత్తం {0} చెట్లు, కానీ బ్లాక్‌లో {1}. సేవ్ చేస్తే బ్లాక్ {0} అవుతుంది.',
@@ -194,6 +194,7 @@ function applyLang() {
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
   $('lang-en').setAttribute('aria-pressed', LANG === 'en'); $('lang-te').setAttribute('aria-pressed', LANG === 'te');
   renderGuide();
+  if (typeof renderSync === 'function' && db) renderSync();
   renderAll();
 }
 document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { LANG = b.dataset.lang; try { localStorage.setItem('pbr:lang', LANG); } catch {} applyLang(); renderNear(); if (lastFix) onFix(lastFix); });
@@ -417,6 +418,7 @@ function setTab(name, push = true) {
   if (push && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo(0, 0);
   if (name === 'palms') renderSat();
+  if (name === 'setup') renderDbCount();
 }
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 $('helpBtn').onclick = () => setTab(tab === 'guide' ? 'count' : 'guide');
@@ -1147,8 +1149,38 @@ $('gpsExport').onclick = async () => {
   for (const b of blocks()) for (let i = 1; i <= (+b.palms || 0); i++) { const id = palmId(b.id, i), p = S.palms[id]; if (p && p.loc) lines.push([id, b.id, i, p.loc.lat, p.loc.lng, p.loc.acc, p.loc.n || 1, new Date(p.loc.t).toISOString()].join(',')); }
   try { await downloads.save({ filename: 'palm-gps.csv', data: new Blob([lines.join('\n')], { type: 'text/csv' }) }); } catch {}
 };
-const pend = {};
-window.addEventListener('pbr:pending', e => { pend[e.detail.path] = e.detail.pending; $('syncNote').hidden = !Object.values(pend).some(Boolean); });
+/* ---------- sync light (top bar) + what the server holds ---------- */
+function syncView(st) {
+  if (!st.shared) return ['', 'syLocal', 'syInfoLocal'];
+  if (st.err) return ['err', 'syErr', 'syInfoErr'];
+  if (st.pending) return ['wait', st.online ? 'sySend' : 'syWait', 'syInfoWait'];
+  if (!st.online) return ['wait', 'syOffline', 'syInfoOffline'];
+  return ['ok', 'syOk', 'syInfoOk'];
+}
+function renderSync() {
+  const st = syncState(), [cls, label] = syncView(st), el = $('syncLight');
+  el.hidden = false; el.className = 'sync ' + cls; el.querySelector('span').textContent = t(label, nf(st.pending));
+}
+async function renderDbCount() {
+  const el = $('dbCount'); if (!isShared()) { el.textContent = ''; return; }
+  el.textContent = t('dbCountWait');
+  try { const c = await serverCounts(); el.textContent = c ? t('dbCount', nf(c.palms), nf(c.gps)) : ''; } catch { el.textContent = t('dbCountFail'); }
+}
+function infoBox(text, extra) {
+  const el = $('svSheet');
+  el.querySelector('.in').innerHTML = `<div class="sv-msg">${esc(text)}</div>${extra ? `<div class="sv-msg" id="infoExtra">${esc(extra)}</div>` : ''}<button class="btn go" data-s="ok">${esc(t('ok'))}</button>`;
+  el.hidden = false;
+  el.onclick = e => { const b = e.target.closest('[data-s]'); if (!b && e.target !== el) return; el.hidden = true; };
+}
+$('syncLight').onclick = async () => {
+  const st = syncState(), info = syncView(st)[2];
+  infoBox(t(info, st.err || nf(st.pending)), isShared() ? t('dbCountWait') : '');
+  if (st.err) clearSyncError();
+  if (!isShared()) return;
+  let msg; try { const c = await serverCounts(); msg = t('dbCount', nf(c.palms), nf(c.gps)); } catch { msg = t('dbCountFail'); }
+  const x = document.getElementById('infoExtra'); if (x) x.textContent = msg;
+};
+window.addEventListener('pbr:sync', renderSync);
 window.addEventListener('pbr:syncerror', () => toast(t('syncErr')));
 
 /* ---------- field tools: survey, 3D, data backup ---------- */
@@ -1188,7 +1220,7 @@ $('dataFile').onchange = async e => {
 };
 $('dataUpload').onclick = () => {
   const n = Object.keys(localData.all()).length;
-  confirmBox(t('dataUpAsk', nf(n)), async () => { try { toast(t('dataUploaded', nf(await uploadLocal()))); } catch { toast(t('saveFailed')); } });
+  confirmBox(t('dataUpAsk', nf(n)), async () => { try { toast(t('dataUploaded', nf(await uploadLocal()))); } catch (e) { toast(t('upFailed', (e && e.code) || 'error')); } renderDbCount(); });
 };
 function confirmBox(text, fn) {
   const el = $('svSheet');
@@ -1207,8 +1239,9 @@ async function start() {
   db = dbNs; downloads = dl;
   initSurvey({ db, blocks, canEdit: () => S.canEdit, toast, t, saveLayout, download: saveFile });
   $('dataMode').textContent = t(isShared() ? 'dataShared' : 'dataLocal');
-  $('dataUpload').hidden = !(isShared() && S.canEdit && Object.keys(localData.all()).length);
   if (userNs) { S.uid = await userNs.id(); S.canEdit = await userNs.canEdit(); S.canWrite = await userNs.can('data.write'); }
+  $('dataUpload').hidden = !(isShared() && S.canEdit && Object.keys(localData.all()).length);
+  renderSync();
   $('setupTab').hidden = !S.canEdit; $('tabs').classList.toggle('five', S.canEdit);
   if (!db) { banner(t('signedOut')); renderAll(); return; }
   if (S.canWrite === false) banner(t('readOnly'));

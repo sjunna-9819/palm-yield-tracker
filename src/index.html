@@ -16,6 +16,7 @@
 <div class="app">
   <header class="top gut">
     <div class="farm"><h1 id="farmName">Palm Bunch Register</h1><div class="sub" id="farmSub"></div></div>
+    <button class="sync" id="syncLight" hidden><i></i><span></span></button>
     <button class="helpbtn" id="helpBtn" data-t="guideBtn"></button>
     <div class="lang" role="group" aria-label="Language">
       <button id="lang-en" data-lang="en">EN</button><button id="lang-te" data-lang="te">తెలుగు</button>
@@ -214,6 +215,7 @@
       <div class="layout-box">
         <h2 data-t="dataTitle" style="margin:0"></h2>
         <div class="hint" id="dataMode"></div>
+        <div class="dbcount" id="dbCount"></div>
         <div class="tool-grid">
           <button class="btn" id="dataExport" data-t="dataExport"></button>
           <button class="btn" id="dataImport" data-t="dataImport"></button>

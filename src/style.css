@@ -332,3 +332,10 @@ table.setup input { width: 100%; min-width: 56px; box-sizing: border-box; height
 /* satellite map (Palms tab) */
 .sat-map { height: 62vh; min-height: 320px; border-radius: 12px; overflow: hidden; background: #1d2a20; margin-top: 8px; }
 .sat-pin span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #f2c230; color: #1b1b1b; border: 2px solid #fff; font: 600 11px/1 'Barlow Condensed', sans-serif; cursor: pointer; }
+
+/* sync light (top bar) */
+.sync { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; flex: none; margin-left: auto; }
+.sync i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted, #888); flex: none; }
+.sync.ok i { background: var(--ok); } .sync.wait i { background: var(--warn); } .sync.err i { background: var(--bad); }
+.sync.err { border-color: var(--bad); color: var(--bad); } .sync.wait { border-color: var(--warn); }
+.dbcount { margin-top: 6px; font-weight: 600; }
