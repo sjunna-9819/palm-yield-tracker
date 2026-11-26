@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Palm Farm">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
-  <script type="module" crossorigin src="./assets/index-Dn2KVIKC.js"></script>
+  <script type="module" crossorigin src="./assets/index-DIKOEx7e.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-WkwZ5CU-.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-BVsvWv60.css">
+  <link rel="stylesheet" crossorigin href="./assets/index-Bncp-Q0R.css">
 </head>
 <body>
 
@@ -66,7 +66,20 @@
       <ul class="rows" id="todayList"></ul>
     </section>
 
-    <!-- Dashboard -->
+    <!-- Today (owner overview) -->
+    <section data-view="dash" class="today-hero" hidden>
+      <div class="th-top"><div><div class="th-big" id="tdBig"></div><div class="th-sub" id="tdSub"></div></div><div class="th-ring" id="tdRing"></div></div>
+      <div class="th-blocks" id="tdBlocks"></div>
+      <div class="th-pace" id="tdPace"></div>
+    </section>
+    <section data-view="dash" class="panel" hidden>
+      <h2 data-t="tdToday"></h2>
+      <div class="th-today" id="tdToday"></div>
+    </section>
+    <section data-view="dash" class="panel" hidden>
+      <h2 data-t="tdAttn"></h2>
+      <div id="tdAttn"></div>
+    </section>
     <section data-view="dash" hidden>
       <h2 data-t="thisMonth"></h2>
       <div class="kpis" id="dashKpis"></div>
