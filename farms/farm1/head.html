@@ -58,12 +58,19 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-body); ove
 .tag3d { position: fixed; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 20px var(--f-display); letter-spacing: .04em; color: #fff; background: rgba(29, 42, 31, .82); padding: 4px 12px; border-radius: 8px; white-space: nowrap; }
 .tag3d::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 0; border-top-color: rgba(29, 42, 31, .82); }
 #loading { position: fixed; inset: 0; display: grid; place-items: center; font: 600 16px var(--f-body); color: var(--muted); pointer-events: none; }
-@media (max-width: 560px) {
-  .card { padding: 10px 12px; gap: 8px; }
-  .card h1 { font-size: 20px; }
-  .card:not(.open) .more { display: none; }
-  .toggle { display: inline-flex; position: absolute; top: 8px; right: 8px; }
-  .views button { padding: 8px 11px; font-size: 13px; }
+@media (max-width: 560px), (max-height: 500px) {
+  /* phones: closed = slim strip (title, More, hour bar); open = at most half the screen, scrolls inside */
+  .card { padding: 8px 10px; gap: 6px; width: calc(100% - 84px); left: max(10px, env(safe-area-inset-left, 0px)); top: calc(8px + env(safe-area-inset-top, 0px));
+    max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; }
+  .card h1 { font-size: 18px; display: inline; }
+  .card:not(.open) .more, .card:not(.open) .stats, .card:not(.open) .sunline { display: none !important; }
+  .card > * { flex-shrink: 0; }
+  .card .hours { margin-top: 0; }
+  .card .hours button { min-width: 36px; height: 34px; font-size: 13px; }
+  .toggle { display: inline-flex; position: absolute; top: 6px; right: 8px; padding: 4px 12px; }
+  .stats b { font-size: 18px; }
+  .compass { width: 40px; height: 40px; right: max(10px, env(safe-area-inset-right, 0px)); top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .views button { padding: 7px 10px; font-size: 13px; }
 }
 .back { font: 600 13px var(--f-body); color: var(--accent); text-decoration: none; margin-right: 10px; }
 </style>
